@@ -51,6 +51,7 @@ namespace BASIC_DATA{
 		public:
 			TroopType type;
 			int tm,x,y,used,mvRiver;
+			Troop(){}
 			Troop(TroopType tp,int t,int xx,int yy): type(tp),tm(t),x(xx),y(yy){
 			}
 	};

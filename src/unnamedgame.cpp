@@ -12,9 +12,9 @@ using WIN_CONTROL::MOUSE::mouseClicked;
 
 namespace GAME{
 	using namespace CHAR_SET;
+	using BASIC_DATA::Troop;
+	using BASIC_DATA::TroopType;
 	namespace Troops{
-		using BASIC_DATA::Troop;
-		using BASIC_DATA::TroopType;
 		TroopType SHIELD(3,2,1,1),
 			HORSE(1,1,4,1),
 			BOW(1,1,2,3),
@@ -40,8 +40,16 @@ namespace GAME{
 		}
 	}
 	
-	int map[30][30],mapHeight,mapWidth;
-	int mapcolor[30][30];
+	#define MOUNT 0x11
+	#define RIVER 0x12
+	#define SCAMP 0x13
+	#define CAMP_B 0x01
+	#define CAMP_W 0x02
+	#define TROOP_B 0x01
+	#define TROOP_W 0x02
+	
+	int mapHeight,mapWidth;
+	int map[30][30],tmap[30][30],cmap[30][30];
 	int nowSide;
 	
 	bool GAME_FLAG;
@@ -50,7 +58,83 @@ namespace GAME{
 		if(pos.X%2==0||pos.Y%4==0||pos.Y>mapWidth*4+1||pos.X>mapHeight*2+1)return false;
 		return true;
 	}
-	
+	bool isTroopAt(short x,short y){
+		return tmap[x][y];
+	}
+	Troop getTroopAt(short x,short y){
+		if(!isTroopAt(x,y))return Troop();
+		for(auto now:Troops::troops){
+			if(now.x==x&&now.y==y)return now;
+		}
+	}
+	void printItem(short x,short y){
+		if(isTroopAt(x,y)){
+			Troop tpa=getTroopAt(x,y);
+			setColor(tpa.tm==0?c_BLACK:c_WHITE,cmap[x][y]);
+			std::cout<<tpa.type.icon[tpa.tm]<<tpa.type.hp;
+			setColor(c_DARKGREY,c_GREY);
+		}
+		else{
+			if(map[x][y]==MOUNT){
+				setColor(c_BLACK,cmap[x][y]);
+				std::cout<<"MMM";
+				setColor(c_DARKGREY,c_GREY);
+			}
+			else if(map[x][y]==RIVER){
+				setColor(c_SKYBLUE,cmap[x][y]);
+				std::cout<<"   ";
+				setColor(c_DARKGREY,c_GREY);
+			}
+			else if(map[x][y]==SCAMP){
+				setColor(c_YELLOW,cmap[x][y]);
+				std::cout<<"   ";
+				setColor(c_DARKGREY,c_GREY);
+			}
+			else if(map[x][y]==CAMP_B){
+				setColor(c_BLACK,cmap[x][y]);
+				std::cout<<"   ";
+				setColor(c_DARKGREY,c_GREY);
+			}
+			else if(map[x][y]==CAMP_W){
+				setColor(c_WHITE,cmap[x][y]);
+				std::cout<<"   ";
+				setColor(c_DARKGREY,c_GREY);
+			}
+			else{
+				setColor(c_GREY,cmap[x][y]);
+				std::cout<<"   ";
+				setColor(c_DARKGREY,c_GREY);
+			}
+		}
+	}
+	void readMapFromFile(){
+		FILE *fout=fopen("fccf","w");
+		fprintf(fout," ");
+		FILE *fin=fopen("map.txt","r");
+		fscanf(fin,"%d %d\n",&mapHeight,&mapWidth);
+		for(short i=0;i<mapHeight;i++){
+			for(short j=0;j<mapWidth;j++){
+				char chr;
+				fscanf(fin,"%c",&chr);
+				if(chr=='M'){
+					cmap[i][j]=c_GREY;
+					map[i][j]=MOUNT;
+				}
+				else if(chr=='R'){
+					cmap[i][j]=c_SKYBLUE;
+					map[i][j]=RIVER;
+				}
+				else if(chr=='.'){
+					cmap[i][j]=c_GREY;
+				}
+				else if(chr=='C'){
+					cmap[i][j]=c_YELLOW;
+					map[i][j]=SCAMP;
+				}
+			}
+			fscanf(fin,"\n");
+		}
+	}
 	void drawMap(){
 		goxy(0,0);
 		std::cout<<tab[2];
@@ -63,7 +147,7 @@ namespace GAME{
 			std::cout<<tab[1];
 			for(short y=0;y<mapWidth;y++){
 				
-				std::cout<<"   ";
+				printItem(x,y);
 				std::cout<<tab[1];
 			}
 			goxy(x*2+2,0);
@@ -75,7 +159,8 @@ namespace GAME{
 		goxy(mapHeight*2-1,0);
 		std::cout<<tab[1];
 		for(short y=0;y<mapWidth;y++){
-			std::cout<<"   ";
+			
+			printItem(mapHeight-1,y);
 			std::cout<<tab[1];
 		}
 		goxy(mapHeight*2,0);
@@ -106,8 +191,9 @@ int main(){
 	GAME::Troops::troopImageInit();
 	
 	GAME_FLAG = 1;
-	mapHeight=10;
-	mapWidth=10;
+//	mapHeight=10;
+//	mapWidth=10;
+	readMapFromFile();
 	while(GAME_FLAG){
 		gameRun();
 	}
