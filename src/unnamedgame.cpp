@@ -30,7 +30,7 @@ namespace GAME{
 			SWORD.setDefaultIcon(items[6],items[7]);
 		}
 		void clearUsedTags(){
-			for(auto now:troops){
+			for(auto &now:troops){
 				now.acted=now.moved=0;
 			}
 		}
@@ -74,8 +74,8 @@ namespace GAME{
 		return map[x][y]==MOUNT;
 	}
 	bool isCampAt(short x,short y){
-		return (x-bcPos.X==1||x-bcPos.X==0&&y-bcPos.Y==1||y-bcPos.Y==0)||
-			   (x-wcPos.X==1||x-wcPos.X==0&&y-wcPos.Y==1||y-wcPos.Y==0);
+		return ((x-bcPos.X==1)||(x-bcPos.X==0)&&(y-bcPos.Y==1)||(y-bcPos.Y==0))||
+			   ((x-wcPos.X==1)||(x-wcPos.X==0)&&(y-wcPos.Y==1)||(y-wcPos.Y==0));
 	}
 	bool isRiverAt(short x,short y){
 		return map[x][y]==RIVER;
@@ -200,21 +200,19 @@ namespace GAME{
 	}
 	
 	bool onEndTurn(){
-		goxy(10,50);
-		printf("%d ",spacePressed);
 		if(spacePressed){spacePressed=false;return true;}
 		else return false;
 	}
 	
 	void checkDie(Troop& tar){
 		if(tar.type.hp<=0){
+			tmap[tar.x][tar.y]=0;
 			for(int i=0;i<Troops::troops.size();i++){
 				if(Troops::troops[i].x==tar.x&&Troops::troops[i].y==tar.y){
 					Troops::troops.erase(Troops::troops.begin()+i);
 					break;
 				}
 			}
-			tmap[tar.x][tar.y]=0;
 			
 		}
 	}
@@ -294,34 +292,31 @@ namespace GAME{
 		}
 		drawMap();
 		while(1){
+			if(tar.acted)return;
 			getMouse();
 			if(rightClicked){
-				if(!inBlock(lastClickedPos))continue;
 				rightClicked=false;
+				if(!inBlock(lastClickedPos))continue;
 				COORD blockPos=clickWhichBlock(lastClickedPos);
 				short x=blockPos.Y,y=blockPos.X;
 				if(x==tar.x&&y==tar.y){
 					dfsClear();
+					drawMap();
 					return;
 				}
 			}
 			if(mouseClicked){
-				if(!inBlock(lastClickedPos))continue;
 				mouseClicked=false;
+				if(!inBlock(lastClickedPos))continue;
 				COORD blockPos=clickWhichBlock(lastClickedPos);
 				short dx=blockPos.Y,dy=blockPos.X;
 				if(ctmap[dx][dy]==c_PURPLE){
-					Troop nt;
+					Troop nt(tar.type,tar.tm,dx,dy);
 					nt.type.hp=tar.type.hp;
-					nt.type.sho=tar.type.sho;
-					nt.type.atk=tar.type.atk;
-					nt.type.mov=tar.type.mov;
-					nt.tm=tar.tm;
-					nt.x=dx,nt.y=dy;
-					nt.acted=nt.moved=1;
-					tmap[dx][dy]=tmap[x][y];
 					Troops::troops.push_back(nt);
 					dfsClear();
+					drawMap();
+					tar.acted=1;
 					return;
 				}
 			}
@@ -333,6 +328,7 @@ namespace GAME{
 		drawAttackDfs(tar.x,tar.y,0,tar.type.sho,tar.tm);
 		drawMap();
 		while(1){
+			if(tar.acted)return;
 			getMouse();
 			if(rightClicked){
 				rightClicked=false;
@@ -340,14 +336,10 @@ namespace GAME{
 				COORD blockPos=clickWhichBlock(lastClickedPos);
 				short dx=blockPos.Y,dy=blockPos.X;
 				if(dx==tar.x&&dy==tar.y){
-					if(isScampAt(dx,dy)){
-						return selectProduce(tar);
-					}
-					else {
-						dfsClear();
-						drawMap();
-						return;
-					}
+					dfsClear();
+					drawMap();
+					return;
+					
 				}
 			}
 			if(mouseClicked){
@@ -361,10 +353,11 @@ namespace GAME{
 						else wcHp-=tar.type.atk;
 						dfsClear();
 						drawMap();
+						tar.acted=1;
 						return;
 					}
 					
-					Troop target=getTroopAt(dx,dy);
+					Troop &target=getTroopAt(dx,dy);
 					target.type.hp-=tar.type.atk;
 					checkDie(target);
 					tar.acted=1;
@@ -376,15 +369,21 @@ namespace GAME{
 		}
 	}
 	
+	bool winned(){
+		
+	}
+	
+	
 	void turn(){
-		SetConsoleTitle((string("Unnamed Game - ")+(nowTurn?"WHITE":"BLACK")+"\'s Turn").c_str());
 		dfsClear();
 		Troops::clearUsedTags();
+		
 		drawMap();
 		while(1) {
+			SetConsoleTitle((string("Unnamed Game - ")+(nowTurn?"WHITE":"BLACK")+"\'s Turn : "+ char(wcHp+'0') + " w : b "+ char(bcHp+'0')).c_str());
 			Sleep(50);
 			mouseClicked=rightClicked=spacePressed=0;
-			
+			drawMap();
 			WIN_CONTROL::MOUSE::getMouse();
 			if(onEndTurn()){
 				return;
@@ -406,7 +405,9 @@ namespace GAME{
 				short x=blockPos.Y,y=blockPos.X;
 				if(!isTroopAt(x,y))continue;
 				Troop &tar=getTroopAt(x,y);
-				if(!tar.acted&&tar.tm==nowTurn)selectAttack(tar);
+				if(!tar.acted&&tar.tm==nowTurn)
+					if(!isScampAt(x,y))selectAttack(tar);
+					else selectProduce(tar);
 			}
 		}
 		

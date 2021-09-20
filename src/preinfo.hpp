@@ -129,7 +129,8 @@ namespace WIN_CONTROL{
 				}
 			}
 			else if(ms_rec.EventType==KEY_EVENT){
-				if(ms_rec.Event.KeyEvent.wVirtualKeyCode==VK_SPACE){
+				if(ms_rec.Event.KeyEvent.wVirtualKeyCode==VK_SPACE
+				&&ms_rec.Event.KeyEvent.bKeyDown){
 					spacePressed=true;
 				}
 			}
