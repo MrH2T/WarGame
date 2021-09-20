@@ -50,7 +50,7 @@ namespace BASIC_DATA{
 	class Troop{
 		public:
 			TroopType type;
-			int tm,x,y,mvRiver;
+			int tm,x,y;
 			int moved,acted;
 			Troop(){}
 			Troop(TroopType tp,int t,int xx,int yy): type(tp),tm(t),x(xx),y(yy){
@@ -114,6 +114,8 @@ namespace WIN_CONTROL{
 //				printf("%d %d          \n",cr_pos.X,cr_pos.Y);
 				SetConsoleCursorPosition(hOut,binfo.dwCursorPosition);
 				mouseNowPos=cr_pos;
+//				goxy(5,50);
+//				printf("%d %d %d",ms_rec.Event.MouseEvent.dwButtonState,FROM_LEFT_1ST_BUTTON_PRESSED,RIGHTMOST_BUTTON_PRESSED);
 				if(ms_rec.Event.MouseEvent.dwButtonState==FROM_LEFT_1ST_BUTTON_PRESSED){
 			//		if(mouseClicked)return;
 					mouseClicked=true;rightClicked=false;
@@ -121,6 +123,8 @@ namespace WIN_CONTROL{
 				}
 				if(ms_rec.Event.MouseEvent.dwButtonState==RIGHTMOST_BUTTON_PRESSED){
 					rightClicked=true;mouseClicked=false;
+//					goxy(10,50);
+//					printf("FCCF");
 					lastClickedPos=cr_pos;
 				}
 			}
@@ -138,7 +142,6 @@ namespace WIN_CONTROL{
 		cci.bVisible=0;
 		SetConsoleCursorInfo(hOut,&cci);
 	}
-	
 	
 	void setColor(short fCol,short bCol){
 		SetConsoleTextAttribute(hOut,fCol|(bCol<<4));

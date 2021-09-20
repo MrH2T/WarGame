@@ -29,12 +29,9 @@ namespace GAME{
 			LANCE.setDefaultIcon(items[0],items[1]);
 			SWORD.setDefaultIcon(items[6],items[7]);
 		}
-		void placeTroop(TroopType tp,int t,int x,int y){
-			troops.push_back(Troop(tp,t,x,y));
-		}
 		void clearUsedTags(){
 			for(auto now:troops){
-				now.acted=now.moved=now.mvRiver=0;
+				now.acted=now.moved=0;
 			}
 		}
 	}
@@ -82,6 +79,9 @@ namespace GAME{
 	}
 	bool isRiverAt(short x,short y){
 		return map[x][y]==RIVER;
+	}
+	bool isBlockedAt(short x,short y){
+		return isMountAt(x,y)||isCampAt(x,y)||isRiverAt(x,y)||isScampAt(x,y);
 	}
 	int getCampAt(short x,short y){
 		if((x-bcPos.X==1||x-bcPos.X==0&&y-bcPos.Y==1||y-bcPos.Y==0))return BLACK;
@@ -163,6 +163,7 @@ namespace GAME{
 			}
 			fscanf(fin,"\n");
 		}
+		
 	}
 	void drawMap(){
 		setColor(c_DGREY,c_GREY);
@@ -205,18 +206,6 @@ namespace GAME{
 		else return false;
 	}
 	
-	vector<COORD> stayWaterPos;
-	void warnStayRiver(){
-		memset(ctmap,0,sizeof(ctmap));
-		for(auto pos:stayWaterPos){
-			ctmap[pos.X][pos.Y]=c_RED;
-		}
-		drawMap();
-		Sleep(500);
-		memset(ctmap,0,sizeof(ctmap));
-		drawMap();
-		stayWaterPos.clear();
-	}
 	void checkDie(Troop& tar){
 		if(tar.type.hp<=0){
 			for(int i=0;i<Troops::troops.size();i++){
@@ -234,7 +223,7 @@ namespace GAME{
 	bool bookForDfs[30][30];
 	void drawMoveDfs(short x,short y,int moved,int movlim,int originTm){
 		if(moved>movlim)return;
-		ctmap[x][y]=c_LIME;
+		if(map[x][y]!=RIVER)ctmap[x][y]=c_LIME;
 		bookForDfs[x][y]=1;
 		for(int p=0;p<4;p++){
 			short dx=x+dir[p][0],dy=y+dir[p][1];
@@ -269,6 +258,8 @@ namespace GAME{
 		while(1){
 			getMouse();
 			if(mouseClicked){
+				mouseClicked=false;
+				if(!inBlock(lastClickedPos))continue;
 				COORD blockPos=clickWhichBlock(lastClickedPos);
 				int dx=blockPos.Y,dy=blockPos.X;
 				if(dx==dy){
@@ -303,6 +294,7 @@ namespace GAME{
 		while(1){
 			getMouse();
 			if(rightClicked){
+				if(!inBlock(lastClickedPos))continue;
 				rightClicked=false;
 				COORD blockPos=clickWhichBlock(lastClickedPos);
 				short x=blockPos.Y,y=blockPos.X;
@@ -312,6 +304,7 @@ namespace GAME{
 				}
 			}
 			if(mouseClicked){
+				if(!inBlock(lastClickedPos))continue;
 				mouseClicked=false;
 				COORD blockPos=clickWhichBlock(lastClickedPos);
 				short dx=blockPos.Y,dy=blockPos.X;
@@ -324,7 +317,6 @@ namespace GAME{
 					nt.tm=tar.tm;
 					nt.x=dx,nt.y=dy;
 					nt.acted=nt.moved=1;
-					nt.mvRiver=0;
 					tmap[dx][dy]=tmap[x][y];
 					Troops::troops.push_back(nt);
 					dfsClear();
@@ -342,6 +334,7 @@ namespace GAME{
 			getMouse();
 			if(rightClicked){
 				rightClicked=false;
+				if(!inBlock(lastClickedPos))continue;
 				COORD blockPos=clickWhichBlock(lastClickedPos);
 				short dx=blockPos.Y,dy=blockPos.X;
 				if(dx==tar.x&&dy==tar.y){
@@ -357,6 +350,7 @@ namespace GAME{
 			}
 			if(mouseClicked){
 				mouseClicked=false;
+				if(!inBlock(lastClickedPos))continue;
 				COORD blockPos=clickWhichBlock(lastClickedPos);
 				short dx=blockPos.Y,dy=blockPos.X;
 				if(ctmap[dx][dy]==c_RED){
@@ -386,21 +380,11 @@ namespace GAME{
 		while(1) {
 			WIN_CONTROL::MOUSE::getMouse();
 			if(onEndTurn()){
-				bool stayRiver=0;
-				for(auto now:Troops::troops){
-					if(now.tm==nowTurn){
-						if(map[now.x][now.y]==RIVER&&!now.mvRiver){
-							stayWaterPos.push_back(COORD{now.x,now.y});
-							stayRiver=1;
-						}
-					}
-				}
-				if(stayRiver){
-					warnStayRiver();
-				}else return;
+				return;
 			}
 			if(mouseClicked) {
 				mouseClicked=false;
+				if(!inBlock(lastClickedPos))continue;
 				COORD blockPos=clickWhichBlock(lastClickedPos);
 				short x=blockPos.Y,y=blockPos.X;
 				if(!isTroopAt(x,y))continue;
@@ -410,6 +394,7 @@ namespace GAME{
 			}
 			if(rightClicked){
 				rightClicked=false;
+				if(!inBlock(lastClickedPos))continue;
 				COORD blockPos=clickWhichBlock(lastClickedPos);
 				short x=blockPos.Y,y=blockPos.X;
 				if(!isTroopAt(x,y))continue;
@@ -425,19 +410,137 @@ namespace GAME{
 		turn();
 	}
 	
+	bool enablePlaceCamp(short x,short y){
+		if(x==mapHeight-1||y==mapWidth-1)return false;
+		if(isBlockedAt(x,y)||isBlockedAt(x+1,y)||isBlockedAt(x,y+1)||isBlockedAt(x+1,y+1))return false;
+		return true;
+	}
+	void placeCampAt(short x,short y,int tm){
+		map[x][y]=map[x+1][y]=map[x][y+1]=map[x+1][y+1]=tm?CAMP_W:CAMP_B;
+		cmap[x][y]=cmap[x+1][y]=cmap[x][y+1]=cmap[x+1][y+1]=tm?c_WHITE:c_DGREY;
+		if(tm)wcPos=COORD{x,y};
+		else bcPos=COORD{x,y};
+	}
 	
-	
+	void placeTroopAt(TroopType type,short x,short y,int tm){
+		Troop nt(type,tm,x,y);
+		Troops::troops.push_back(nt);
+		tmap[x][y]=tm?TROOP_W:TROOP_B;
+		
+	}
+	void printCertainItem(short x,short y,int tm,TroopType tp){
+		goxy(2*x+1,4*y+1);
+		std::cout<<tp.icon[tm]<<tp.hp;
+	}
+	void choosingTroop(short x,short y,int tm){
+		
+		int nowChoose=0;
+		TroopType nowType=Troops::SHIELD;
+		while(1){
+			getMouse();
+			printCertainItem(x,y,tm,nowType);
+			if(mouseClicked){
+				mouseClicked=false;
+				placeTroopAt(nowType,x,y,tm);
+				drawMap();
+				return;
+			}
+			if(rightClicked){
+				rightClicked=false;
+				nowChoose=(nowChoose+1)%6;
+				switch(nowChoose){
+					case 0:{
+						nowType=Troops::SHIELD;
+						break;
+					}
+					case 1:{
+						nowType=Troops::HORSE;
+						break;
+					}
+					case 2:{
+						nowType=Troops::BOW;
+						break;
+					}
+					case 3:{
+						nowType=Troops::CROSSBOW;
+						break;
+					}
+					case 4:{
+						nowType=Troops::LANCE;
+						break;
+					}
+					case 5:{
+						nowType=Troops::SWORD;
+						break;
+					}
+				}
+		//		goxy(10,50);printf("%d  ",nowChoose);
+				drawMap();
+			}
+		}
+	}
+	void placeTroop(int tm){
+		int troopPlaced=0;
+		SetConsoleTitle((string("Unnamed Game - ")+(tm?"WHITE":"BLACK")+" Place Troops").c_str());
+		while(1){
+			if(troopPlaced==4)return;
+			getMouse();
+			if(mouseClicked){
+				mouseClicked=false;
+				COORD blockPos=clickWhichBlock(lastClickedPos);
+				short x=blockPos.Y,y=blockPos.X;
+				if(isCampAt(x,y)&&getCampAt(x,y)==tm&&!isTroopAt(x,y)){
+					choosingTroop(x,y,tm);
+					troopPlaced++;
+				}
+			}
+		}
+	}
 	
 	void chooseCamp(int tm){
+		SetConsoleTitle((string("Unnamed Game - ")+ (tm?"WHITE":"BLACK")+string(" Put Camp")).c_str());
+		bool enableNow=0;int tmtmmtm=0;
 		while(1){
-			
+//			goxy(10,50);
+//			printf("%d",tmtmmtm++);
+			getMouse();
+			if(inBlock(mouseNowPos)){
+				dfsClear();
+				
+				COORD blockPos=clickWhichBlock(mouseNowPos);
+				short x=blockPos.Y,y=blockPos.X;
+				if(enablePlaceCamp(x,y)){
+					ctmap[x][y]=ctmap[x+1][y]=ctmap[x][y+1]=ctmap[x+1][y+1]=tm?c_WHITE:c_DGREY;
+					enableNow=1;
+				}
+				else enableNow=0;
+				drawMap();
+			}
+			if(mouseClicked){
+				mouseClicked=false;
+				COORD blockPos=clickWhichBlock(lastClickedPos);
+				short x=blockPos.Y,y=blockPos.X;
+				if(!inBlock(lastClickedPos))continue;
+				if(enableNow){
+					placeCampAt(x,y,tm);
+					dfsClear();
+					return;
+				}
+			}
 		}
 	}
 	
 	void gameInit(){
 		bcHp=wcHp=6;
-		
+		bcPos=COORD{-10,-10};
+		wcPos=COORD{-10,-10};
+		drawMap();
 		chooseCamp(0);
+		chooseCamp(1);
+		placeTroop(0);
+		placeTroop(1);
+		nowTurn=1;
+		spacePressed=0;
 	}
 }
 
@@ -452,6 +555,10 @@ int main(){
 //	mapHeight=10;
 //	mapWidth=10;
 	readMapFromFile();
+//	return 0;
+	gameInit();
+	
+	SetConsoleTitle("Unnamed Game");
 	while(GAME_FLAG){
 		gameRun();
 	}
