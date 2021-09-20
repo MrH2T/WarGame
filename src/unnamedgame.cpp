@@ -41,7 +41,7 @@ namespace GAME{
 	}
 	
 	int map[30][30],mapHeight,mapWidth;
-	
+	int mapcolor[30][30];
 	int nowSide;
 	
 	bool GAME_FLAG;
@@ -62,6 +62,7 @@ namespace GAME{
 			goxy(x*2+1,0);
 			std::cout<<tab[1];
 			for(short y=0;y<mapWidth;y++){
+				
 				std::cout<<"   ";
 				std::cout<<tab[1];
 			}
@@ -74,7 +75,7 @@ namespace GAME{
 		goxy(mapHeight*2-1,0);
 		std::cout<<tab[1];
 		for(short y=0;y<mapWidth;y++){
-			std::cout<<Troops::CROSSBOW.icon[0]<<"5";
+			std::cout<<"   ";
 			std::cout<<tab[1];
 		}
 		goxy(mapHeight*2,0);
