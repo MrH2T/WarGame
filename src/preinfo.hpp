@@ -50,7 +50,8 @@ namespace BASIC_DATA{
 	class Troop{
 		public:
 			TroopType type;
-			int tm,x,y,used,mvRiver;
+			int tm,x,y,mvRiver;
+			int moved,acted;
 			Troop(){}
 			Troop(TroopType tp,int t,int xx,int yy): type(tp),tm(t),x(xx),y(yy){
 			}
@@ -91,6 +92,8 @@ namespace WIN_CONTROL{
 		COORD cor={y,x};
 		SetConsoleCursorPosition(hOut,cor);
 	}
+	
+	#define isKeydown()
 	namespace MOUSE{
 		CONSOLE_SCREEN_BUFFER_INFO binfo;
 		INPUT_RECORD ms_rec;
@@ -98,7 +101,10 @@ namespace WIN_CONTROL{
 		COORD cr_pos,cr_home={0,0};
 		
 		COORD lastClickedPos,mouseNowPos;
-		bool mouseClicked;
+		bool mouseClicked,rightClicked;
+		
+		bool spacePressed;
+		
 		void getMouse(){
 			ReadConsoleInput(hIn,&ms_rec,1,&ms_res);
 			if(ms_rec.EventType==MOUSE_EVENT){
@@ -110,8 +116,17 @@ namespace WIN_CONTROL{
 				mouseNowPos=cr_pos;
 				if(ms_rec.Event.MouseEvent.dwButtonState==FROM_LEFT_1ST_BUTTON_PRESSED){
 			//		if(mouseClicked)return;
-					mouseClicked=true;
+					mouseClicked=true;rightClicked=false;
 					lastClickedPos=cr_pos;
+				}
+				if(ms_rec.Event.MouseEvent.dwButtonState==RIGHTMOST_BUTTON_PRESSED){
+					rightClicked=true;mouseClicked=false;
+					lastClickedPos=cr_pos;
+				}
+			}
+			else if(ms_rec.EventType==KEY_EVENT){
+				if(ms_rec.Event.KeyEvent.wVirtualKeyCode==VK_SPACE){
+					spacePressed=true;
 				}
 			}
 		}
