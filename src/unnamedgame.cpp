@@ -89,17 +89,15 @@ namespace GAME{
 		else return -1;
 	}
 	Troop& getTroopAt(short x,short y){
-		Troop tn=Troop();
-		if(!isTroopAt(x,y))return tn;
 		for(auto &now:Troops::troops){
 			if(now.x==x&&now.y==y)return now;
 		}
-		return tn;
+		return Troops::troops[0];
 	}
 	void printItem(short x,short y){
 		if(isTroopAt(x,y)){
 			Troop tpa=getTroopAt(x,y);
-			setColor(tpa.tm==0?c_BLACK:c_WHITE,ctmap[x][y]?ctmap[x][y]:cmap[x][y]);
+			setColor(c_BLACK,ctmap[x][y]?ctmap[x][y]:cmap[x][y]);
 			std::cout<<tpa.type.icon[tpa.tm]<<tpa.type.hp;
 			setColor(c_DARKGREY,c_GREY);
 		}
@@ -202,6 +200,8 @@ namespace GAME{
 	}
 	
 	bool onEndTurn(){
+		goxy(10,50);
+		printf("%d ",spacePressed);
 		if(spacePressed){spacePressed=false;return true;}
 		else return false;
 	}
@@ -261,8 +261,8 @@ namespace GAME{
 				mouseClicked=false;
 				if(!inBlock(lastClickedPos))continue;
 				COORD blockPos=clickWhichBlock(lastClickedPos);
-				int dx=blockPos.Y,dy=blockPos.X;
-				if(dx==dy){
+				short dx=blockPos.Y,dy=blockPos.X;
+				if(dx==x&&dy==y){
 					memset(ctmap,0,sizeof(ctmap));
 					drawMap();
 					return;
@@ -275,6 +275,8 @@ namespace GAME{
 						memset(bookForDfs,0,sizeof(bookForDfs));
 						memset(ctmap,0,sizeof(ctmap));
 						drawMap();
+						tar.moved=1;
+				//		goxy(10,50);printf("FCCF");
 						return;
 					}else continue;
 				}
@@ -375,9 +377,14 @@ namespace GAME{
 	}
 	
 	void turn(){
+		SetConsoleTitle((string("Unnamed Game - ")+(nowTurn?"WHITE":"BLACK")+"\'s Turn").c_str());
 		dfsClear();
+		Troops::clearUsedTags();
 		drawMap();
 		while(1) {
+			Sleep(50);
+			mouseClicked=rightClicked=spacePressed=0;
+			
 			WIN_CONTROL::MOUSE::getMouse();
 			if(onEndTurn()){
 				return;
@@ -389,7 +396,7 @@ namespace GAME{
 				short x=blockPos.Y,y=blockPos.X;
 				if(!isTroopAt(x,y))continue;
 				Troop &tar=getTroopAt(x,y);
-				if(!tar.moved)selectMove(tar);
+				if(!tar.moved&&tar.tm==nowTurn)selectMove(tar);
 				
 			}
 			if(rightClicked){
@@ -399,15 +406,18 @@ namespace GAME{
 				short x=blockPos.Y,y=blockPos.X;
 				if(!isTroopAt(x,y))continue;
 				Troop &tar=getTroopAt(x,y);
-				if(!tar.acted)selectAttack(tar);
+				if(!tar.acted&&tar.tm==nowTurn)selectAttack(tar);
 			}
 		}
-		nowTurn^=1;
+		
 	}
 	void gameRun(){
 		WIN_CONTROL::hideCursor();
 		Troops::clearUsedTags();
 		turn();
+		nowTurn^=1;
+		Sleep(500);
+		spacePressed=0;
 	}
 	
 	bool enablePlaceCamp(short x,short y){
@@ -489,6 +499,7 @@ namespace GAME{
 				mouseClicked=false;
 				COORD blockPos=clickWhichBlock(lastClickedPos);
 				short x=blockPos.Y,y=blockPos.X;
+				
 				if(isCampAt(x,y)&&getCampAt(x,y)==tm&&!isTroopAt(x,y)){
 					choosingTroop(x,y,tm);
 					troopPlaced++;
