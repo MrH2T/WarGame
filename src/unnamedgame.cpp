@@ -13,6 +13,7 @@ namespace GAME{
 	namespace Troops{
 		using BASIC_DATA::Troop;
 		using BASIC_DATA::TroopType;
+		using namespace CHAR_SET;
 		TroopType SHIELD(3,2,1,1),
 			HORSE(1,1,4,1),
 			BOW(1,1,2,3),
@@ -20,11 +21,20 @@ namespace GAME{
 			LANCE(2,1,3,1),
 			SWORD(1,2,3,1);
 		std::vector<Troop> troops;
-		void placeTroop(int x,int y){
-			
+		void troopImageInit(){
+			SHIELD.setDefaultIcon(items[8],items[9]);
+			HORSE.setDefaultIcon(items[10],items[11]);
+			BOW.setDefaultIcon(items[2],items[3]);
+			CROSSBOW.setDefaultIcon(items[4],items[5]);
+			LANCE.setDefaultIcon(items[0],items[1]);
+			SWORD.setDefaultIcon(items[6],items[7]);
+		}
+		void placeTroop(TroopType tp,int x,int y){
+			troops.push_back(Troop(tp,0,x,y));
 		}
 	}
 	
+	int nowSide;
 	
 	bool GAME_FLAG;
 	void gameRun(){
@@ -41,6 +51,7 @@ using namespace GAME;
 
 int main(){
 	WIN_CONTROL::CONSOLE_INIT();
+	GAME::Troops::troopImageInit();
 	
 	GAME_FLAG = 1;
 	

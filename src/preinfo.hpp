@@ -39,6 +39,9 @@ namespace BASIC_DATA{
 			string icon[2];
 		public:
 			int hp,atk,mov,sho;
+			void setDefaultIcon(string s0,string s1){
+				icon[0]=s0,icon[1]=s1;
+			}
 			//mov=move sho=shoot tm=team
 			TroopType(){}
 			TroopType(int h,int a,int m,int s):
