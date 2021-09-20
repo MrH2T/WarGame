@@ -35,9 +35,8 @@ items:
 
 namespace BASIC_DATA{
 	class TroopType{
-		private:
-			string icon[2];
 		public:
+			string icon[2];
 			int hp,atk,mov,sho;
 			void setDefaultIcon(string s0,string s1){
 				icon[0]=s0,icon[1]=s1;
@@ -49,10 +48,9 @@ namespace BASIC_DATA{
 	};
 	
 	class Troop{
-		private:
-			TroopType type;
 		public:
-			int tm,x,y;
+			TroopType type;
+			int tm,x,y,used;
 			Troop(TroopType tp,int t,int xx,int yy): type(tp),tm(t),x(xx),y(yy){
 			}
 	};
@@ -98,7 +96,7 @@ namespace WIN_CONTROL{
 		DWORD ms_res;
 		COORD cr_pos,cr_home={0,0};
 		
-		COORD lastPos;
+		COORD lastClickedPos,mouseNowPos;
 		bool mouseClicked;
 		void getMouse(){
 			ReadConsoleInput(hIn,&ms_rec,1,&ms_res);
@@ -108,10 +106,11 @@ namespace WIN_CONTROL{
 //				goxy(20,40);
 //				printf("%d %d          \n",cr_pos.X,cr_pos.Y);
 				SetConsoleCursorPosition(hOut,binfo.dwCursorPosition);
-				
+				mouseNowPos=cr_pos;
 				if(ms_rec.Event.MouseEvent.dwButtonState==FROM_LEFT_1ST_BUTTON_PRESSED){
+			//		if(mouseClicked)return;
 					mouseClicked=true;
-					lastPos=cr_pos;
+					lastClickedPos=cr_pos;
 				}
 			}
 		}
@@ -144,7 +143,7 @@ namespace WIN_CONTROL{
 		GetConsoleMode(hIn,&consoleMode);
 		SetConsoleMode(hIn,consoleMode|ENABLE_MOUSE_INPUT);
 		
-		SetConsoleCP(65001);
+		SetConsoleOutputCP(65001);
 		SetConsoleTitle("Unnamed Game");
 		
 		hideCursor();
