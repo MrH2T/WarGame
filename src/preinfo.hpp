@@ -1,12 +1,13 @@
-#ifndef PREINFO_CPP
+#ifndef PREINFO_HPP
 
-#define PREINFO_CPP
+#define PREINFO_HPP
 
 #include<iostream>
 #include<algorithm>
 #include<windows.h>
 
 using std::string;
+
 
 namespace CHAR_SET{
 	
@@ -33,15 +34,24 @@ items:
 }
 
 namespace BASIC_DATA{
-	class Troop{
+	class TroopType{
 		private:
 			string icon[2];
 		public:
-			int hp,atk,mov,sho,tm;
-			int x,y;
+			int hp,atk,mov,sho;
 			//mov=move sho=shoot tm=team
-			Troop(int h,int a,int m,int s,int xx,int yy,int t):
-				hp(h),atk(a),mov(m),sho(s),x(xx),y(yy),tm(t){}
+			TroopType(){}
+			TroopType(int h,int a,int m,int s):
+				hp(h),atk(a),mov(m),sho(s){}
+	};
+	
+	class Troop{
+		private:
+			TroopType type;
+		public:
+			int tm,x,y;
+			Troop(TroopType tp,int t,int xx,int yy): type(tp),tm(t),x(xx),y(yy){
+			}
 	};
 }
 
@@ -84,24 +94,23 @@ namespace WIN_CONTROL{
 		INPUT_RECORD ms_rec;
 		DWORD ms_res;
 		COORD cr_pos,cr_home={0,0};
+		
+		COORD lastPos;
+		bool mouseClicked;
 		void getMouse(){
-			std::cerr<<"F";
 			ReadConsoleInput(hIn,&ms_rec,1,&ms_res);
-			std::cerr<<(ms_rec.EventType)<<" "<<MOUSE_EVENT<<std::endl;
 			if(ms_rec.EventType==MOUSE_EVENT){
-				std::cerr<"U";
-				if(ms_rec.Event.MouseEvent.dwButtonState==FROM_LEFT_1ST_BUTTON_PRESSED){
-					if(ms_rec.Event.MouseEvent.dwEventFlags==DOUBLE_CLICK){
-						exit(0);
-					}
-				}
 				cr_pos=ms_rec.Event.MouseEvent.dwMousePosition;
-				GetConsoleScreenBufferInfo(hOut,&binfo);
-				goxy(20,40);
-				printf("%d %d\n",cr_pos.X,cr_pos.Y);
+//				GetConsoleScreenBufferInfo(hOut,&binfo);
+//				goxy(20,40);
+//				printf("%d %d          \n",cr_pos.X,cr_pos.Y);
 				SetConsoleCursorPosition(hOut,binfo.dwCursorPosition);
+				
+				if(ms_rec.Event.MouseEvent.dwButtonState==FROM_LEFT_1ST_BUTTON_PRESSED){
+					mouseClicked=true;
+					lastPos=cr_pos;
+				}
 			}
-			
 		}
 	}
 	
@@ -110,9 +119,6 @@ namespace WIN_CONTROL{
 		GetConsoleCursorInfo(hOut,&cci);
 		cci.bVisible=0;
 		SetConsoleCursorInfo(hOut,&cci);
-	}
-	void setConsoleSize(){
-		system("mode con lines=40 cols=80");
 	}
 	
 	
@@ -130,12 +136,14 @@ namespace WIN_CONTROL{
 													";
 		}
 	}
-	
 	void CONSOLE_INIT(){
+		DWORD consoleMode;
+		GetConsoleMode(hIn,&consoleMode);
+		SetConsoleMode(hIn,consoleMode|ENABLE_MOUSE_INPUT);
+		
 		SetConsoleCP(65001);
 		SetConsoleTitle("Unnamed Game");
 		
-		setConsoleSize();
 		hideCursor();
 		
 	}
