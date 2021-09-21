@@ -439,22 +439,22 @@ namespace GAME{
 	bool won(){
 		if(atkOneTurn>=3){
 			if(nowTurn==1){
-				SetConsoleTitle((string("Unnamed Game - WHITE Wins")).c_str());
+				SetConsoleTitle((string("War Game - WHITE Wins")).c_str());
 				while(1);
 				return true;
 			}else{
-				SetConsoleTitle((string("Unnamed Game - BLACK Wins")).c_str());
+				SetConsoleTitle((string("War Game - BLACK Wins")).c_str());
 				while(1);
 				return true;
 			}
 		}
 		if(wcHp<=0){
-			SetConsoleTitle((string("Unnamed Game - BLACK Wins")).c_str());
+			SetConsoleTitle((string("War Game - BLACK Wins")).c_str());
 			while(1);
 			return true;
 		}
 		else if(bcHp<=0){
-			SetConsoleTitle((string("Unnamed Game - WHITE Wins")).c_str());
+			SetConsoleTitle((string("War Game - WHITE Wins")).c_str());
 			while(1);
 			return true;
 		}
@@ -476,7 +476,7 @@ namespace GAME{
 			
 			if(won())exit(0);
 			
-			SetConsoleTitle((string("Unnamed Game - ")+(nowTurn?"WHITE":"BLACK")+"\'s Turn : "+ char(wcHp+'0') + " w : b "+ char(bcHp+'0')).c_str());
+			SetConsoleTitle((string("War Game - ")+(nowTurn?"WHITE":"BLACK")+"\'s Turn : "+ char(wcHp+'0') + " w : b "+ char(bcHp+'0')).c_str());
 			Sleep(50);
 			mouseClicked=rightClicked=spacePressed=0;
 			drawMap();
@@ -582,7 +582,7 @@ namespace GAME{
 	}
 	void placeTroop(int tm){
 		int troopPlaced=0;
-		SetConsoleTitle((string("Unnamed Game - ")+(tm?"WHITE":"BLACK")+" Place Troops").c_str());
+		SetConsoleTitle((string("War Game - ")+(tm?"WHITE":"BLACK")+" Place Troops").c_str());
 		
 		dfsClear();
 		for(short x=0;x<mapHeight;x++){
@@ -646,7 +646,7 @@ int main(){
 	gameInit();
 	
 	GAME_FLAG = 1;
-	SetConsoleTitle("Unnamed Game");
+	SetConsoleTitle("War Game");
 	while(GAME_FLAG){
 		gameRun();
 	}

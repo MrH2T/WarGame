@@ -167,7 +167,7 @@ namespace WIN_CONTROL{
 		SetConsoleMode(hIn,consoleMode|ENABLE_MOUSE_INPUT);
 		
 		SetConsoleOutputCP(65001);
-		SetConsoleTitle("Unnamed Game");
+		SetConsoleTitle("War Game");
 		
 		hideCursor();
 		
