@@ -45,6 +45,9 @@ namespace BASIC_DATA{
 			TroopType(){}
 			TroopType(int h,int a,int m,int s):
 				hp(h),atk(a),mov(m),sho(s){}
+			bool operator==(const TroopType bbb)const{
+				return hp==bbb.hp&&atk==bbb.atk&&mov==bbb.mov&&sho==bbb.sho;
+			}
 	};
 	
 	class Troop{

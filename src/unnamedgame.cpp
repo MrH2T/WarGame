@@ -19,7 +19,8 @@ namespace GAME{
 			BOW(1,1,2,3),
 			CROSSBOW(1,1,1,4),
 			LANCE(2,1,3,1),
-			SWORD(1,2,3,1);
+			SWORD(1,2,3,1),
+			EMPTY(0,0,0,0);
 		std::vector<Troop> troops;
 		void troopImageInit(){
 			SHIELD.setDefaultIcon(items[8],items[9]);
@@ -28,6 +29,7 @@ namespace GAME{
 			CROSSBOW.setDefaultIcon(items[4],items[5]);
 			LANCE.setDefaultIcon(items[0],items[1]);
 			SWORD.setDefaultIcon(items[6],items[7]);
+			EMPTY.setDefaultIcon("   ","   ");
 		}
 		void clearUsedTags(){
 			for(auto &now:troops){
@@ -527,12 +529,13 @@ namespace GAME{
 		tmap[x][y]=tm?TROOP_W:TROOP_B;
 		
 	}
+	using namespace Troops;
 	void printCertainItem(short x,short y,int tm,TroopType tp){
 		goxy(2*x+1,4*y+1);
-		std::cout<<tp.icon[tm]<<tp.hp;
+		if(tp==EMPTY)setColor(isSideCampAt(x,y)?c_LYELLOW:tm?c_WHITE:c_DGREY,isSideCampAt(x,y)?c_LYELLOW:tm?c_WHITE:c_DGREY),std::cout<<"   ";
+		else std::cout<<tp.icon[tm]<<tp.hp;
 	}
-	using namespace Troops;
-	int mctSize=6,sctSize=2;
+	int mctSize=7,sctSize=3;
 	TroopType mainCampType[100];
 	TroopType sideCampType[100];
 	void initCampTypeImages(){
@@ -543,12 +546,14 @@ namespace GAME{
 		mainCampType[3]=CROSSBOW;
 		mainCampType[4]=LANCE;
 		mainCampType[5]=SWORD;
+		mainCampType[6]=EMPTY;
 		
 		sideCampType[0]=SHIELD;
 		sideCampType[1]=CROSSBOW;
+		sideCampType[2]=EMPTY;
 	}
 	
-	void choosingTroop(short x,short y,int tm,TroopType types[],int tplen){
+	bool choosingTroop(short x,short y,int tm,TroopType types[],int tplen){
 		int nowChoose=0;
 		TroopType nowType=types[nowChoose];
 		while(1){
@@ -556,9 +561,13 @@ namespace GAME{
 			printCertainItem(x,y,tm,nowType);
 			if(mouseClicked){
 				mouseClicked=false;
+				if(nowType==EMPTY){
+					drawMap();
+					return false;
+				}
 				placeTroopAt(nowType,x,y,tm);
 				drawMap();
-				return;
+				return true;
 			}
 			if(rightClicked){
 				rightClicked=false;
@@ -595,14 +604,12 @@ namespace GAME{
 				
 				if(troopPlaced==4&&!isTroopAt(x,y))continue;
 				if(isCampAt(x,y)&&getCampAt(x,y)==tm){
-					if(!isTroopAt(x,y))troopPlaced++;
-					else tmap[x][y]=0,clearTroopAt(x,y);
-					choosingTroop(x,y,tm,mainCampType,mctSize);
+					if(isTroopAt(x,y))troopPlaced--,clearTroopAt(x,y),tmap[x][y]=0;
+					if(choosingTroop(x,y,tm,mainCampType,mctSize))troopPlaced++;
 				}
 				else if(isSideCampAt(x,y)&&getSideCampAt(x,y)==tm){
-					if(!isTroopAt(x,y))troopPlaced++;
-					else tmap[x][y]=0,clearTroopAt(x,y);
-					choosingTroop(x,y,tm,sideCampType,sctSize);
+					if(isTroopAt(x,y))troopPlaced--,clearTroopAt(x,y),tmap[x][y]=0;
+					if(choosingTroop(x,y,tm,sideCampType,sctSize))troopPlaced++;
 				}
 				
 			}
