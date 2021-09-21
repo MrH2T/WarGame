@@ -20,7 +20,7 @@ tabs:
 0-LR 1-UD 2-DR 3-DL 4-UR 5-UL 6-UDR 7-UDL 8-DLR 9-ULR 10-UDLR
 */
 	string items[]={"\u25a0","\u25a1","\u25b2","\u25b3",
-		"\u25b6","\u25b7","\u25c6","\u25c7","\u25cb","\u25cf",
+		"\u25b6","\u25b7","\u25c6","\u25c7","\u25cf","\u25cb",
 		"\u2605","\u2606"};
 /*
 items:

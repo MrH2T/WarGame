@@ -74,8 +74,8 @@ namespace GAME{
 		return map[x][y]==MOUNT;
 	}
 	bool isCampAt(short x,short y){
-		return ((x-bcPos.X==1)||(x-bcPos.X==0)&&(y-bcPos.Y==1)||(y-bcPos.Y==0))||
-			   ((x-wcPos.X==1)||(x-wcPos.X==0)&&(y-wcPos.Y==1)||(y-wcPos.Y==0));
+		return ((x-bcPos.X<=1)&&(x-bcPos.X>=0)&&(y-bcPos.Y<=1)&&(y-bcPos.Y>=0))||
+			   ((x-wcPos.X<=1)&&(x-wcPos.X>=0)&&(y-wcPos.Y<=1)&&(y-wcPos.Y>=0));
 	}
 	bool isRiverAt(short x,short y){
 		return map[x][y]==RIVER;
@@ -84,8 +84,8 @@ namespace GAME{
 		return isMountAt(x,y)||isCampAt(x,y)||isRiverAt(x,y)||isScampAt(x,y);
 	}
 	int getCampAt(short x,short y){
-		if((x-bcPos.X==1||x-bcPos.X==0&&y-bcPos.Y==1||y-bcPos.Y==0))return BLACK;
-		if((x-wcPos.X==1||x-wcPos.X==0&&y-wcPos.Y==1||y-wcPos.Y==0))return WHITE;
+		if((x-bcPos.X<=1&&x-bcPos.X>=0&&y-bcPos.Y<=1&&y-bcPos.Y>=0))return BLACK;
+		if((x-wcPos.X<=1&&x-wcPos.X>=0&&y-wcPos.Y<=1&&y-wcPos.Y>=0))return WHITE;
 		else return -1;
 	}
 	Troop& getTroopAt(short x,short y){
@@ -218,14 +218,15 @@ namespace GAME{
 	}
 	
 	const int dir[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
-	bool bookForDfs[30][30];
+	int bookForDfs[30][30];
 	void drawMoveDfs(short x,short y,int moved,int movlim,int originTm){
 		if(moved>movlim)return;
 		if(map[x][y]!=RIVER)ctmap[x][y]=c_LIME;
-		bookForDfs[x][y]=1;
+		if(moved>bookForDfs[x][y])return;
+		bookForDfs[x][y]=moved;
 		for(int p=0;p<4;p++){
 			short dx=x+dir[p][0],dy=y+dir[p][1];
-			if(dx<0||dy<0||dx>mapHeight||dy>mapWidth||bookForDfs[dx][dy]||isTroopAt(dx,dy)||isMountAt(dx,dy)
+			if(dx<0||dy<0||dx>mapHeight||dy>mapWidth||isTroopAt(dx,dy)||isMountAt(dx,dy)
 				||isCampAt(dx,dy)&&getCampAt(dx,dy)!=originTm)continue;
 			drawMoveDfs(dx,dy,moved+1,movlim,originTm);
 		}
@@ -233,11 +234,12 @@ namespace GAME{
 	void drawAttackDfs(short x,short y,int moved,int movlim,int originTm,int met=0){
 		if(moved>movlim)return;
 		if(isTroopAt(x,y)&&getTroopAt(x,y).tm!=originTm||isCampAt(x,y)&&getCampAt(x,y)!=originTm)ctmap[x][y]=c_RED;
-		bookForDfs[x][y]=1;
+		if(moved>bookForDfs[x][y])return;
+		bookForDfs[x][y]=moved;
 		if(met)return;
 		for(int p=0;p<4;p++){
 			short dx=x+dir[p][0],dy=y+dir[p][1];
-			if(dx<0||dy<0||dx>mapHeight||dy>mapWidth||bookForDfs[dx][dy]||isMountAt(dx,dy))continue;
+			if(dx<0||dy<0||dx>mapHeight||dy>mapWidth||isMountAt(dx,dy))continue;
 			if(isTroopAt(dx,dy)&&getTroopAt(dx,dy).tm!=originTm&&!met){
 				drawAttackDfs(dx,dy,moved+1,movlim,originTm,1);
 			}
@@ -245,12 +247,11 @@ namespace GAME{
 		}
 	}
 	
-	void dfsClear(){memset(ctmap,0,sizeof(ctmap));memset(bookForDfs,0,sizeof(bookForDfs));}
+	void dfsClear(){memset(ctmap,0,sizeof(ctmap));memset(bookForDfs,0x3f,sizeof(bookForDfs));}
 	
 	void selectMove(Troop& tar){
 		short x=tar.x,y=tar.y;
-		memset(ctmap,0,sizeof(ctmap));
-		memset(bookForDfs,0,sizeof(bookForDfs));
+		dfsClear();
 		drawMoveDfs(x,y,0,tar.type.mov,tar.tm);
 		drawMap();
 		while(1){
@@ -266,7 +267,7 @@ namespace GAME{
 					return;
 				}
 				else{
-					if(bookForDfs[dx][dy]){//enable move to
+					if(ctmap[dx][dy]==c_LIME){//enable move to
 						std::swap(tmap[dx][dy],tmap[x][y]);
 						Troop& zzzlalala=getTroopAt(x,y);
 						zzzlalala.x=dx,zzzlalala.y=dy;
@@ -313,7 +314,9 @@ namespace GAME{
 				if(ctmap[dx][dy]==c_PURPLE){
 					Troop nt(tar.type,tar.tm,dx,dy);
 					nt.type.hp=tar.type.hp;
+					nt.moved=nt.acted=1;
 					Troops::troops.push_back(nt);
+					tmap[dx][dy]=tmap[x][y];
 					dfsClear();
 					drawMap();
 					tar.acted=1;
@@ -369,10 +372,25 @@ namespace GAME{
 		}
 	}
 	
-	bool winned(){
-		
+	bool won(){
+		if(wcHp<=0){
+			SetConsoleTitle((string("Unnamed Game - BLACK Wins")).c_str());
+			while(1);
+			return true;
+		}
+		else if(bcHp<=0){
+			SetConsoleTitle((string("Unnamed Game - WHITE Wins")).c_str());
+			while(1);
+			return true;
+		}
+		else return false;
 	}
-	
+	bool nowMovedAll(){
+		for(auto t:Troops::troops){
+			if(t.tm==nowTurn&&(!t.moved||!t.acted))return false;
+		}
+		return true;
+	}
 	
 	void turn(){
 		dfsClear();
@@ -380,6 +398,9 @@ namespace GAME{
 		
 		drawMap();
 		while(1) {
+			if(nowMovedAll())return;
+			if(won())exit(0);
+			
 			SetConsoleTitle((string("Unnamed Game - ")+(nowTurn?"WHITE":"BLACK")+"\'s Turn : "+ char(wcHp+'0') + " w : b "+ char(bcHp+'0')).c_str());
 			Sleep(50);
 			mouseClicked=rightClicked=spacePressed=0;
@@ -559,17 +580,15 @@ namespace GAME{
 using namespace GAME;
 
 int main(){
-	WIN_CONTROL::CONSOLE_INIT();
 //	SetConsoleOutputCP(65001);
+	WIN_CONTROL::CONSOLE_INIT();
+	
 	GAME::Troops::troopImageInit();
 	
-	GAME_FLAG = 1;
-//	mapHeight=10;
-//	mapWidth=10;
 	readMapFromFile();
-//	return 0;
 	gameInit();
 	
+	GAME_FLAG = 1;
 	SetConsoleTitle("Unnamed Game");
 	while(GAME_FLAG){
 		gameRun();
