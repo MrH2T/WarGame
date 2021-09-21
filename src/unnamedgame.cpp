@@ -257,7 +257,7 @@ namespace GAME{
 		bookForDfs[x][y]=moved;
 		for(int p=0;p<4;p++){
 			short dx=x+dir[p][0],dy=y+dir[p][1];
-			if(dx<0||dy<0||dx>mapHeight||dy>mapWidth||isTroopAt(dx,dy)||isMountAt(dx,dy)
+			if(dx<0||dy<0||dx>=mapHeight||dy>=mapWidth||isTroopAt(dx,dy)||isMountAt(dx,dy)
 				||isCampAt(dx,dy)&&getCampAt(dx,dy)!=originTm)continue;
 			drawMoveDfs(dx,dy,moved+1,movlim,originTm);
 		}
@@ -273,7 +273,7 @@ namespace GAME{
 		if(met)return;
 		for(int p=0;p<4;p++){
 			short dx=x+dir[p][0],dy=y+dir[p][1];
-			if(dx<0||dy<0||dx>mapHeight||dy>mapWidth||isMountAt(dx,dy))continue;
+			if(dx<0||dy<0||dx>=mapHeight||dy>=mapWidth||isMountAt(dx,dy))continue;
 			if(isTroopAt(dx,dy)&&troops[getTroopAt(dx,dy)].tm!=originTm&&!met){
 				drawAttackDfs(dx,dy,moved+1,movlim,originTm,1);
 			}
@@ -288,7 +288,7 @@ namespace GAME{
 		if(met)return;
 		for(int p=0;p<4;p++){
 			short dx=x+dir[p][0],dy=y+dir[p][1];
-			if(dx<0||dy<0||dx>mapHeight||dy>mapWidth||isMountAt(dx,dy))continue;
+			if(dx<0||dy<0||dx>=mapHeight||dy>=mapWidth||isMountAt(dx,dy))continue;
 			if(isTroopAt(dx,dy)&&troops[getTroopAt(dx,dy)].tm!=originTm&&!met){
 				checkAttackDfs(dx,dy,moved+1,movlim,originTm,1);
 			}
@@ -492,6 +492,7 @@ namespace GAME{
 				if(!isTroopAt(x,y))continue;
 				TroopId tar=getTroopAt(x,y);
 				if(enableToMove(tar)&&troops[tar].tm==nowTurn)selectMove(tar);
+				if(won())exit(0);
 				if(nowMovedAll())return;
 			}
 			if(rightClicked){
@@ -506,6 +507,7 @@ namespace GAME{
 				if(enableToAct(tar)&&troops[tar].tm==nowTurn)
 					if(!isScampAt(x,y))selectAttack(tar);
 					else selectProduce(tar);
+				if(won())exit(0);
 				if(nowMovedAll())return;
 			}
 		}
