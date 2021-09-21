@@ -35,7 +35,9 @@ namespace GAME{
 			}
 		}
 	}
+	using Troops::troops;
 	
+	typedef int TroopId;
 	#define MOUNT 0x11
 	#define RIVER 0x12
 	#define SCAMP 0x13
@@ -88,17 +90,17 @@ namespace GAME{
 		if((x-wcPos.X<=1&&x-wcPos.X>=0&&y-wcPos.Y<=1&&y-wcPos.Y>=0))return WHITE;
 		else return -1;
 	}
-	Troop& getTroopAt(short x,short y){
-		for(auto &now:Troops::troops){
-			if(now.x==x&&now.y==y)return now;
+	TroopId getTroopAt(short x,short y){
+		for(int now=0;now<troops.size();now++){
+			if(troops[now].x==x&&troops[now].y==y)return now;
 		}
-		return Troops::troops[0];
+		return -1;
 	}
 	void printItem(short x,short y){
 		if(isTroopAt(x,y)){
-			Troop tpa=getTroopAt(x,y);
+			TroopId tpa=getTroopAt(x,y);
 			setColor(c_BLACK,ctmap[x][y]?ctmap[x][y]:cmap[x][y]);
-			std::cout<<tpa.type.icon[tpa.tm]<<tpa.type.hp;
+			std::cout<<troops[tpa].type.icon[troops[tpa].tm]<<troops[tpa].type.hp;
 			setColor(c_DARKGREY,c_GREY);
 		}
 		else{
@@ -204,15 +206,10 @@ namespace GAME{
 		else return false;
 	}
 	
-	void checkDie(Troop& tar){
-		if(tar.type.hp<=0){
-			tmap[tar.x][tar.y]=0;
-			for(int i=0;i<Troops::troops.size();i++){
-				if(Troops::troops[i].x==tar.x&&Troops::troops[i].y==tar.y){
-					Troops::troops.erase(Troops::troops.begin()+i);
-					break;
-				}
-			}
+	void checkDie(TroopId tar){
+		if(troops[tar].type.hp<=0){
+			tmap[troops[tar].x][troops[tar].y]=0;
+		 	troops.erase(troops.begin()+tar);
 			
 		}
 	}
@@ -231,28 +228,60 @@ namespace GAME{
 			drawMoveDfs(dx,dy,moved+1,movlim,originTm);
 		}
 	}
+	
+	bool atkable;
+	
 	void drawAttackDfs(short x,short y,int moved,int movlim,int originTm,int met=0){
 		if(moved>movlim)return;
-		if(isTroopAt(x,y)&&getTroopAt(x,y).tm!=originTm||isCampAt(x,y)&&getCampAt(x,y)!=originTm)ctmap[x][y]=c_RED;
+		if(isTroopAt(x,y)&&troops[getTroopAt(x,y)].tm!=originTm||isCampAt(x,y)&&getCampAt(x,y)!=originTm)ctmap[x][y]=c_RED,atkable=1;
 		if(moved>bookForDfs[x][y])return;
 		bookForDfs[x][y]=moved;
 		if(met)return;
 		for(int p=0;p<4;p++){
 			short dx=x+dir[p][0],dy=y+dir[p][1];
 			if(dx<0||dy<0||dx>mapHeight||dy>mapWidth||isMountAt(dx,dy))continue;
-			if(isTroopAt(dx,dy)&&getTroopAt(dx,dy).tm!=originTm&&!met){
+			if(isTroopAt(dx,dy)&&troops[getTroopAt(dx,dy)].tm!=originTm&&!met){
 				drawAttackDfs(dx,dy,moved+1,movlim,originTm,1);
 			}
 			else drawAttackDfs(dx,dy,moved+1,movlim,originTm,0);
 		}
 	}
+	void checkAttackDfs(short x,short y,int moved,int movlim,int originTm,int met=0){
+		if(moved>movlim)return;
+		if(isTroopAt(x,y)&&troops[getTroopAt(x,y)].tm!=originTm||isCampAt(x,y)&&getCampAt(x,y)!=originTm)atkable=1;
+		if(moved>bookForDfs[x][y])return;
+		bookForDfs[x][y]=moved;
+		if(met)return;
+		for(int p=0;p<4;p++){
+			short dx=x+dir[p][0],dy=y+dir[p][1];
+			if(dx<0||dy<0||dx>mapHeight||dy>mapWidth||isMountAt(dx,dy))continue;
+			if(isTroopAt(dx,dy)&&troops[getTroopAt(dx,dy)].tm!=originTm&&!met){
+				checkAttackDfs(dx,dy,moved+1,movlim,originTm,1);
+			}
+			else checkAttackDfs(dx,dy,moved+1,movlim,originTm,0);
+		}
+	}
 	
 	void dfsClear(){memset(ctmap,0,sizeof(ctmap));memset(bookForDfs,0x3f,sizeof(bookForDfs));}
 	
-	void selectMove(Troop& tar){
-		short x=tar.x,y=tar.y;
+	bool enableToMove(TroopId tar){
+		return !troops[tar].moved;
+	}
+	bool enableToAct(TroopId tar){
+		if(troops[tar].acted)return false;
+		if(map[troops[tar].x][troops[tar].y]==SCAMP)return true;
+		memset(bookForDfs,0x3f,sizeof(bookForDfs));
+		atkable=0;
+		checkAttackDfs(troops[tar].x,troops[tar].y,0,troops[tar].type.sho,troops[tar].tm);
+		if(atkable)return true;
+		return false;
+	}
+	
+	
+	void selectMove(TroopId tar){
+		short x=troops[tar].x,y=troops[tar].y;
 		dfsClear();
-		drawMoveDfs(x,y,0,tar.type.mov,tar.tm);
+		drawMoveDfs(x,y,0,troops[tar].type.mov,troops[tar].tm);
 		drawMap();
 		while(1){
 			getMouse();
@@ -269,12 +298,11 @@ namespace GAME{
 				else{
 					if(ctmap[dx][dy]==c_LIME){//enable move to
 						std::swap(tmap[dx][dy],tmap[x][y]);
-						Troop& zzzlalala=getTroopAt(x,y);
-						zzzlalala.x=dx,zzzlalala.y=dy;
+						troops[tar].x=dx,troops[tar].y=dy;
+						troops[tar].moved=1;
 						memset(bookForDfs,0,sizeof(bookForDfs));
 						memset(ctmap,0,sizeof(ctmap));
 						drawMap();
-						tar.moved=1;
 				//		goxy(10,50);printf("FCCF");
 						return;
 					}else continue;
@@ -283,24 +311,24 @@ namespace GAME{
 		}
 	}
 	
-	void selectProduce(Troop& tar){
-		short x=tar.x,y=tar.y;
+	void selectProduce(TroopId tar){
+		short x=troops[tar].x,y=troops[tar].y;
 		dfsClear();
 		for(int p=0;p<4;p++){
 			short dx=x+dir[p][0],dy=y+dir[p][1];
-			if(dx<0||dy<0||dx>mapHeight||dy>mapWidth||isTroopAt(dx,dy)||isMountAt(dx,dy)||isCampAt(dx,dy)&&getCampAt(dx,dy)!=tar.tm||isRiverAt(dx,dy))continue;
+			if(dx<0||dy<0||dx>mapHeight||dy>mapWidth||isTroopAt(dx,dy)||isMountAt(dx,dy)||isCampAt(dx,dy)&&getCampAt(dx,dy)!=troops[tar].tm||isRiverAt(dx,dy))continue;
 			ctmap[dx][dy]=c_PURPLE;
 		}
 		drawMap();
 		while(1){
-			if(tar.acted)return;
+			if(!enableToAct(tar))return;
 			getMouse();
 			if(rightClicked){
 				rightClicked=false;
 				if(!inBlock(lastClickedPos))continue;
 				COORD blockPos=clickWhichBlock(lastClickedPos);
 				short x=blockPos.Y,y=blockPos.X;
-				if(x==tar.x&&y==tar.y){
+				if(x==troops[tar].x&&y==troops[tar].y){
 					dfsClear();
 					drawMap();
 					return;
@@ -312,33 +340,33 @@ namespace GAME{
 				COORD blockPos=clickWhichBlock(lastClickedPos);
 				short dx=blockPos.Y,dy=blockPos.X;
 				if(ctmap[dx][dy]==c_PURPLE){
-					Troop nt(tar.type,tar.tm,dx,dy);
-					nt.type.hp=tar.type.hp;
+					troops[tar].acted=1;
+					Troop nt(troops[tar].type,troops[tar].tm,dx,dy);
+					nt.type.hp=troops[tar].type.hp;
 					nt.moved=nt.acted=1;
-					Troops::troops.push_back(nt);
+					troops.push_back(nt);
 					tmap[dx][dy]=tmap[x][y];
 					dfsClear();
 					drawMap();
-					tar.acted=1;
 					return;
 				}
 			}
 		}
 	}
-	void selectAttack(Troop& tar){
-		short x=tar.x,y=tar.y;
+	void selectAttack(TroopId tar){
+		short x=troops[tar].x,y=troops[tar].y;
 		dfsClear();
-		drawAttackDfs(tar.x,tar.y,0,tar.type.sho,tar.tm);
+		drawAttackDfs(troops[tar].x,troops[tar].y,0,troops[tar].type.sho,troops[tar].tm);
 		drawMap();
 		while(1){
-			if(tar.acted)return;
+			if(!enableToAct(tar))return;
 			getMouse();
 			if(rightClicked){
 				rightClicked=false;
 				if(!inBlock(lastClickedPos))continue;
 				COORD blockPos=clickWhichBlock(lastClickedPos);
 				short dx=blockPos.Y,dy=blockPos.X;
-				if(dx==tar.x&&dy==tar.y){
+				if(dx==troops[tar].x&&dy==troops[tar].y){
 					dfsClear();
 					drawMap();
 					return;
@@ -352,18 +380,18 @@ namespace GAME{
 				short dx=blockPos.Y,dy=blockPos.X;
 				if(ctmap[dx][dy]==c_RED){
 					if(isCampAt(dx,dy)){
-						if(getCampAt(dx,dy)==0)bcHp-=tar.type.atk;
-						else wcHp-=tar.type.atk;
+						if(getCampAt(dx,dy)==0)bcHp-=troops[tar].type.atk;
+						else wcHp-=troops[tar].type.atk;
 						dfsClear();
 						drawMap();
-						tar.acted=1;
+						troops[tar].acted=1;
 						return;
 					}
 					
-					Troop &target=getTroopAt(dx,dy);
-					target.type.hp-=tar.type.atk;
+					TroopId target=getTroopAt(dx,dy);
+					troops[tar].acted=1;
+					troops[target].type.hp-=troops[tar].type.atk;
 					checkDie(target);
-					tar.acted=1;
 					dfsClear();
 					drawMap();
 					return;
@@ -386,8 +414,8 @@ namespace GAME{
 		else return false;
 	}
 	bool nowMovedAll(){
-		for(auto t:Troops::troops){
-			if(t.tm==nowTurn&&(!t.moved||!t.acted))return false;
+		for(int t=0;t<troops.size();t++){
+			if(troops[t].tm==nowTurn&&(enableToAct(t)||enableToMove(t)))return false;
 		}
 		return true;
 	}
@@ -398,7 +426,7 @@ namespace GAME{
 		
 		drawMap();
 		while(1) {
-			if(nowMovedAll())return;
+			
 			if(won())exit(0);
 			
 			SetConsoleTitle((string("Unnamed Game - ")+(nowTurn?"WHITE":"BLACK")+"\'s Turn : "+ char(wcHp+'0') + " w : b "+ char(bcHp+'0')).c_str());
@@ -415,9 +443,9 @@ namespace GAME{
 				COORD blockPos=clickWhichBlock(lastClickedPos);
 				short x=blockPos.Y,y=blockPos.X;
 				if(!isTroopAt(x,y))continue;
-				Troop &tar=getTroopAt(x,y);
-				if(!tar.moved&&tar.tm==nowTurn)selectMove(tar);
-				
+				TroopId tar=getTroopAt(x,y);
+				if(enableToMove(tar)&&troops[tar].tm==nowTurn)selectMove(tar);
+				if(nowMovedAll())return;
 			}
 			if(rightClicked){
 				rightClicked=false;
@@ -425,10 +453,13 @@ namespace GAME{
 				COORD blockPos=clickWhichBlock(lastClickedPos);
 				short x=blockPos.Y,y=blockPos.X;
 				if(!isTroopAt(x,y))continue;
-				Troop &tar=getTroopAt(x,y);
-				if(!tar.acted&&tar.tm==nowTurn)
+				TroopId tar=getTroopAt(x,y);
+//				goxy(10,50);
+//				printf("%d",troops[tar].acted);
+				if(enableToAct(tar)&&troops[tar].tm==nowTurn)
 					if(!isScampAt(x,y))selectAttack(tar);
 					else selectProduce(tar);
+				if(nowMovedAll())return;
 			}
 		}
 		
