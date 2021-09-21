@@ -45,6 +45,8 @@ namespace GAME{
 	#define CAMP_W 0x02
 	#define TROOP_B 0x01
 	#define TROOP_W 0x02
+	#define CSIDE_B 0x03
+	#define CSIDE_W 0x04
 	
 	#define BLACK 0
 	#define WHITE 1
@@ -55,6 +57,7 @@ namespace GAME{
 	int nowTurn;
 	COORD bcPos,wcPos;
 	int bcHp,wcHp;
+	bool onPlacingCamp;
 	
 	bool GAME_FLAG;
 	bool inBlock(COORD pos){
@@ -76,8 +79,7 @@ namespace GAME{
 		return map[x][y]==MOUNT;
 	}
 	bool isCampAt(short x,short y){
-		return ((x-bcPos.X<=1)&&(x-bcPos.X>=0)&&(y-bcPos.Y<=1)&&(y-bcPos.Y>=0))||
-			   ((x-wcPos.X<=1)&&(x-wcPos.X>=0)&&(y-wcPos.Y<=1)&&(y-wcPos.Y>=0));
+		return map[x][y]==CAMP_B||map[x][y]==CAMP_W;
 	}
 	bool isRiverAt(short x,short y){
 		return map[x][y]==RIVER;
@@ -85,16 +87,27 @@ namespace GAME{
 	bool isBlockedAt(short x,short y){
 		return isMountAt(x,y)||isCampAt(x,y)||isRiverAt(x,y)||isScampAt(x,y);
 	}
+	bool isSideCampAt(short x,short y){
+		return map[x][y]==CSIDE_B||map[x][y]==CSIDE_W;
+	}
+	int getSideCampAt(short x,short y){
+		if(!isSideCampAt(x,y))return -1;
+		if(map[x][y]==CSIDE_B)return BLACK;
+		else return WHITE;
+	}
 	int getCampAt(short x,short y){
-		if((x-bcPos.X<=1&&x-bcPos.X>=0&&y-bcPos.Y<=1&&y-bcPos.Y>=0))return BLACK;
-		if((x-wcPos.X<=1&&x-wcPos.X>=0&&y-wcPos.Y<=1&&y-wcPos.Y>=0))return WHITE;
-		else return -1;
+		if(!isCampAt(x,y))return -1;
+		if(map[x][y]==CAMP_B)return BLACK;
+		else return WHITE;
 	}
 	TroopId getTroopAt(short x,short y){
 		for(int now=0;now<troops.size();now++){
 			if(troops[now].x==x&&troops[now].y==y)return now;
 		}
 		return -1;
+	}
+	void clearTroopAt(short x,short y){
+		troops.erase(troops.begin()+getTroopAt(x,y));
 	}
 	void printItem(short x,short y){
 		if(isTroopAt(x,y)){
@@ -159,6 +172,25 @@ namespace GAME{
 				else if(chr=='C'){
 					cmap[i][j]=c_YELLOW;
 					map[i][j]=SCAMP;
+				}
+				else if(chr=='W'){
+					map[i][j]=CAMP_W;
+					cmap[i][j]=c_WHITE;
+				}
+				else if(chr=='B'){
+					map[i][j]=CAMP_B;
+					cmap[i][j]=c_DGREY;
+				}
+				else if(chr=='w'){
+					map[i][j]=CSIDE_W;
+					cmap[i][j]=c_GREY;
+				}
+				else if(chr=='b'){
+					map[i][j]=CSIDE_B;
+					cmap[i][j]=c_GREY;
+				}
+				else {
+					cmap[i][j]=c_GREY;
 				}
 			}
 			fscanf(fin,"\n");
@@ -230,7 +262,7 @@ namespace GAME{
 	}
 	
 	bool atkable;
-	
+	int atkOneTurn=0; 
 	void drawAttackDfs(short x,short y,int moved,int movlim,int originTm,int met=0){
 		if(moved>movlim)return;
 		if(isTroopAt(x,y)&&troops[getTroopAt(x,y)].tm!=originTm||isCampAt(x,y)&&getCampAt(x,y)!=originTm)ctmap[x][y]=c_RED,atkable=1;
@@ -382,9 +414,11 @@ namespace GAME{
 					if(isCampAt(dx,dy)){
 						if(getCampAt(dx,dy)==0)bcHp-=troops[tar].type.atk;
 						else wcHp-=troops[tar].type.atk;
+						atkOneTurn+=troops[tar].type.atk;
+						troops[tar].acted=1;
 						dfsClear();
 						drawMap();
-						troops[tar].acted=1;
+						
 						return;
 					}
 					
@@ -401,6 +435,17 @@ namespace GAME{
 	}
 	
 	bool won(){
+		if(atkOneTurn>=3){
+			if(nowTurn==1){
+				SetConsoleTitle((string("Unnamed Game - WHITE Wins")).c_str());
+				while(1);
+				return true;
+			}else{
+				SetConsoleTitle((string("Unnamed Game - BLACK Wins")).c_str());
+				while(1);
+				return true;
+			}
+		}
 		if(wcHp<=0){
 			SetConsoleTitle((string("Unnamed Game - BLACK Wins")).c_str());
 			while(1);
@@ -423,7 +468,7 @@ namespace GAME{
 	void turn(){
 		dfsClear();
 		Troops::clearUsedTags();
-		
+		atkOneTurn=0;
 		drawMap();
 		while(1) {
 			
@@ -467,23 +512,14 @@ namespace GAME{
 	void gameRun(){
 		WIN_CONTROL::hideCursor();
 		Troops::clearUsedTags();
+		
 		turn();
 		nowTurn^=1;
 		Sleep(500);
 		spacePressed=0;
 	}
 	
-	bool enablePlaceCamp(short x,short y){
-		if(x==mapHeight-1||y==mapWidth-1)return false;
-		if(isBlockedAt(x,y)||isBlockedAt(x+1,y)||isBlockedAt(x,y+1)||isBlockedAt(x+1,y+1))return false;
-		return true;
-	}
-	void placeCampAt(short x,short y,int tm){
-		map[x][y]=map[x+1][y]=map[x][y+1]=map[x+1][y+1]=tm?CAMP_W:CAMP_B;
-		cmap[x][y]=cmap[x+1][y]=cmap[x][y+1]=cmap[x+1][y+1]=tm?c_WHITE:c_DGREY;
-		if(tm)wcPos=COORD{x,y};
-		else bcPos=COORD{x,y};
-	}
+	
 	
 	void placeTroopAt(TroopType type,short x,short y,int tm){
 		Troop nt(type,tm,x,y);
@@ -495,10 +531,26 @@ namespace GAME{
 		goxy(2*x+1,4*y+1);
 		std::cout<<tp.icon[tm]<<tp.hp;
 	}
-	void choosingTroop(short x,short y,int tm){
+	using namespace Troops;
+	int mctSize=6,sctSize=2;
+	TroopType mainCampType[100];
+	TroopType sideCampType[100];
+	void initCampTypeImages(){
+		//use after Troops::troopImageInit()
+		mainCampType[0]=SHIELD;
+		mainCampType[1]=HORSE;
+		mainCampType[2]=BOW;
+		mainCampType[3]=CROSSBOW;
+		mainCampType[4]=LANCE;
+		mainCampType[5]=SWORD;
 		
+		sideCampType[0]=SHIELD;
+		sideCampType[1]=CROSSBOW;
+	}
+	
+	void choosingTroop(short x,short y,int tm,TroopType types[],int tplen){
 		int nowChoose=0;
-		TroopType nowType=Troops::SHIELD;
+		TroopType nowType=types[nowChoose];
 		while(1){
 			getMouse();
 			printCertainItem(x,y,tm,nowType);
@@ -510,33 +562,8 @@ namespace GAME{
 			}
 			if(rightClicked){
 				rightClicked=false;
-				nowChoose=(nowChoose+1)%6;
-				switch(nowChoose){
-					case 0:{
-						nowType=Troops::SHIELD;
-						break;
-					}
-					case 1:{
-						nowType=Troops::HORSE;
-						break;
-					}
-					case 2:{
-						nowType=Troops::BOW;
-						break;
-					}
-					case 3:{
-						nowType=Troops::CROSSBOW;
-						break;
-					}
-					case 4:{
-						nowType=Troops::LANCE;
-						break;
-					}
-					case 5:{
-						nowType=Troops::SWORD;
-						break;
-					}
-				}
+				nowChoose=(nowChoose+1)%tplen;
+				nowType=types[nowChoose];
 		//		goxy(10,50);printf("%d  ",nowChoose);
 				drawMap();
 			}
@@ -545,65 +572,55 @@ namespace GAME{
 	void placeTroop(int tm){
 		int troopPlaced=0;
 		SetConsoleTitle((string("Unnamed Game - ")+(tm?"WHITE":"BLACK")+" Place Troops").c_str());
+		
+		dfsClear();
+		for(short x=0;x<mapHeight;x++){
+			for(short y=0;y<mapWidth;y++){
+				if(getSideCampAt(x,y)==tm)ctmap[x][y]=c_LYELLOW;
+			}
+		}
+		drawMap();
 		while(1){
-			if(troopPlaced==4)return;
 			getMouse();
+			if(onEndTurn()){
+				return;
+			}
 			if(mouseClicked){
 				mouseClicked=false;
 				COORD blockPos=clickWhichBlock(lastClickedPos);
 				short x=blockPos.Y,y=blockPos.X;
+				if(!isCampAt(x,y)&&!isSideCampAt(x,y)
+					||isCampAt(x,y)&&getCampAt(x,y)!=tm
+					||isSideCampAt(x,y)&&getSideCampAt(x,y)!=tm)continue;
 				
-				if(isCampAt(x,y)&&getCampAt(x,y)==tm&&!isTroopAt(x,y)){
-					choosingTroop(x,y,tm);
-					troopPlaced++;
+				if(troopPlaced==4&&!isTroopAt(x,y))continue;
+				if(isCampAt(x,y)&&getCampAt(x,y)==tm){
+					if(!isTroopAt(x,y))troopPlaced++;
+					else tmap[x][y]=0,clearTroopAt(x,y);
+					choosingTroop(x,y,tm,mainCampType,mctSize);
 				}
+				else if(isSideCampAt(x,y)&&getSideCampAt(x,y)==tm){
+					if(!isTroopAt(x,y))troopPlaced++;
+					else tmap[x][y]=0,clearTroopAt(x,y);
+					choosingTroop(x,y,tm,sideCampType,sctSize);
+				}
+				
 			}
 		}
 	}
 	
-	void chooseCamp(int tm){
-		SetConsoleTitle((string("Unnamed Game - ")+ (tm?"WHITE":"BLACK")+string(" Put Camp")).c_str());
-		bool enableNow=0;int tmtmmtm=0;
-		while(1){
-//			goxy(10,50);
-//			printf("%d",tmtmmtm++);
-			getMouse();
-			if(inBlock(mouseNowPos)){
-				dfsClear();
-				
-				COORD blockPos=clickWhichBlock(mouseNowPos);
-				short x=blockPos.Y,y=blockPos.X;
-				if(enablePlaceCamp(x,y)){
-					ctmap[x][y]=ctmap[x+1][y]=ctmap[x][y+1]=ctmap[x+1][y+1]=tm?c_WHITE:c_DGREY;
-					enableNow=1;
-				}
-				else enableNow=0;
-				drawMap();
-			}
-			if(mouseClicked){
-				mouseClicked=false;
-				COORD blockPos=clickWhichBlock(lastClickedPos);
-				short x=blockPos.Y,y=blockPos.X;
-				if(!inBlock(lastClickedPos))continue;
-				if(enableNow){
-					placeCampAt(x,y,tm);
-					dfsClear();
-					return;
-				}
-			}
-		}
-	}
 	
 	void gameInit(){
 		bcHp=wcHp=6;
 		bcPos=COORD{-10,-10};
 		wcPos=COORD{-10,-10};
 		drawMap();
-		chooseCamp(0);
-		chooseCamp(1);
+//Choose Camp: Abandoned
+//		chooseCamp(0);
+//		chooseCamp(1);
 		placeTroop(0);
 		placeTroop(1);
-		nowTurn=1;
+		nowTurn=0;
 		spacePressed=0;
 	}
 }
@@ -615,7 +632,7 @@ int main(){
 	WIN_CONTROL::CONSOLE_INIT();
 	
 	GAME::Troops::troopImageInit();
-	
+	GAME::initCampTypeImages();
 	readMapFromFile();
 	gameInit();
 	
