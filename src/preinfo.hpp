@@ -106,7 +106,7 @@ namespace WIN_CONTROL{
 		COORD lastClickedPos,mouseNowPos;
 		bool mouseClicked,rightClicked;
 		
-		bool spacePressed;
+		bool spacePressed,upPressed,downPressed;
 		
 		void getMouse(){
 			ReadConsoleInput(hIn,&ms_rec,1,&ms_res);
@@ -136,6 +136,15 @@ namespace WIN_CONTROL{
 				&&ms_rec.Event.KeyEvent.bKeyDown){
 					spacePressed=true;
 				}
+				else if(ms_rec.Event.KeyEvent.wVirtualKeyCode==VK_UP
+				&&ms_rec.Event.KeyEvent.bKeyDown){
+					upPressed=true;
+				}
+				else if(ms_rec.Event.KeyEvent.wVirtualKeyCode==VK_DOWN
+				&&ms_rec.Event.KeyEvent.bKeyDown){
+					downPressed=true;
+				}
+				
 			}
 		}
 	}
@@ -154,6 +163,7 @@ namespace WIN_CONTROL{
 	
 	
 	void cls(){
+		setColor(c_WHITE,c_BLACK);
 		for(short i=0;i<80;i++){
 			goxy(i,0);
 			std::cout<<"\

@@ -440,22 +440,22 @@ namespace GAME{
 		if(atkOneTurn>=3){
 			if(nowTurn==1){
 				SetConsoleTitle((string("War Game - WHITE Wins")).c_str());
-				while(1);
+				Sleep(5000);
 				return true;
 			}else{
 				SetConsoleTitle((string("War Game - BLACK Wins")).c_str());
-				while(1);
+				Sleep(5000);
 				return true;
 			}
 		}
 		if(wcHp<=0){
 			SetConsoleTitle((string("War Game - BLACK Wins")).c_str());
-			while(1);
+			Sleep(5000);
 			return true;
 		}
 		else if(bcHp<=0){
 			SetConsoleTitle((string("War Game - WHITE Wins")).c_str());
-			while(1);
+			Sleep(5000);
 			return true;
 		}
 		else return false;
@@ -474,7 +474,10 @@ namespace GAME{
 		drawMap();
 		while(1) {
 			
-			if(won())exit(0);
+			if(won()){
+				GAME_FLAG=false;
+				return;
+			}
 			
 			SetConsoleTitle((string("War Game - ")+(nowTurn?"WHITE":"BLACK")+"\'s Turn : "+ char(wcHp+'0') + " w : b "+ char(bcHp+'0')).c_str());
 			Sleep(50);
@@ -492,7 +495,7 @@ namespace GAME{
 				if(!isTroopAt(x,y))continue;
 				TroopId tar=getTroopAt(x,y);
 				if(enableToMove(tar)&&troops[tar].tm==nowTurn)selectMove(tar);
-				if(won())exit(0);
+				if(won())return;
 				if(nowMovedAll())return;
 			}
 			if(rightClicked){
@@ -507,7 +510,7 @@ namespace GAME{
 				if(enableToAct(tar)&&troops[tar].tm==nowTurn)
 					if(!isScampAt(x,y))selectAttack(tar);
 					else selectProduce(tar);
-				if(won())exit(0);
+				if(won())return;
 				if(nowMovedAll())return;
 			}
 		}
@@ -593,7 +596,7 @@ namespace GAME{
 		drawMap();
 		while(1){
 			getMouse();
-			if(onEndTurn()){
+			if(onEndTurn()&&troopPlaced==4){
 				return;
 			}
 			if(mouseClicked){
@@ -630,26 +633,164 @@ namespace GAME{
 		placeTroop(0);
 		placeTroop(1);
 		nowTurn=0;
-		spacePressed=0;
+		spacePressed=mouseClicked=rightClicked=0;
+	}
+	
+	void gameStart(){
+		readMapFromFile();
+		gameInit();
+		
+		GAME_FLAG = 1;
+		while(GAME_FLAG){
+			gameRun();
+		}
+		cls();
 	}
 }
 
 using namespace GAME;
 
-int main(){
-//	SetConsoleOutputCP(65001);
-	WIN_CONTROL::CONSOLE_INIT();
+namespace APP{
+	bool APP_RUNNING;
+	bool ON_MENU_SCENE;
+	int stage;
 	
+	typedef int GameEvent;
+	
+	GameEvent nowGameEvent;
+	
+	
+	//nowGameEvent
+	#define ON_MENU 0x00
+	#define LOCAL_GAME 0x01
+	#define LOCAL_CLASSIC_GAME 0x10
+	#define LOCAL_THREE_GAME 0x11
+	#define INET_GAME 0x02
+	#define INET_CLASSIC_GAME 0x20
+	#define INET_THREE_GAME 0x21
+	#define EXIT 0xff
+	
+	//stage
+	#define MAIN_PAGE 0x10
+	#define SELECT_LOCAL 0x11
+	#define SELECT_INET 0x12
+	
+	#define GAME_START 0x20
+	
+	//menuBar
+	#define MAIN_PAGE_LOCAL 0
+	#define MAIN_PAGE_INET 1
+	#define MAIN_PAGE_EXIT 2
+	#define SELECT_LOCAL_CLASSIC 0
+	#define SELECT_LOCAL_THREE 1
+	#define SELECT_LOCAL_RETURN 2
+	string mainMenuBar[]={"Start Local Game", "Start Internet Game","Exit"};
+	const int mainMenuBarSize=3;
+	string selectLocalMenuBar[]={"Classic Mode","Three Countries Mode","Return"};
+	const int slMenuBarSize=3;
+	int nowMenuChoosing,nowMenuBarSize;
+	void changeToMainMenu(){
+		ON_MENU_SCENE=1,stage=MAIN_PAGE,nowMenuChoosing=0;
+		nowGameEvent=ON_MENU;
+		nowMenuBarSize=mainMenuBarSize;
+	}
+	void changeToSelectLocal(){
+		ON_MENU_SCENE=1,stage=SELECT_LOCAL,nowMenuChoosing=0;
+		nowGameEvent=ON_MENU;
+		nowMenuBarSize=slMenuBarSize;
+	}
+	void showMenuFrame(){
+		if(stage==MAIN_PAGE){
+			
+			SetConsoleTitle("War Game");
+			
+			for(int i=0;i<mainMenuBarSize;i++){
+				goxy(i,0);
+				if(nowMenuChoosing==i)setColor(c_BLACK,c_GREY);
+				else setColor(c_WHITE,c_BLACK);
+				std::cout<<i+1<<". "<<mainMenuBar[i];
+			}
+		}else if(stage==SELECT_LOCAL){
+			SetConsoleTitle("War Game - Local Game");
+			for(int i=0;i<slMenuBarSize;i++){
+				goxy(i,0);
+				if(nowMenuChoosing==i)setColor(c_BLACK,c_GREY);
+				else setColor(c_WHITE,c_BLACK);
+				std::cout<<i+1<<". "<<selectLocalMenuBar[i];
+			}
+		}else if(stage==SELECT_INET){
+			
+		}else ;
+	}
+	void menuConfirm(){
+		if(stage==MAIN_PAGE){
+			if(nowMenuChoosing==MAIN_PAGE_LOCAL){
+				changeToSelectLocal();
+			}else if(nowMenuChoosing==MAIN_PAGE_INET){
+				stage=SELECT_INET;
+			}else if(nowMenuChoosing==MAIN_PAGE_EXIT){
+				nowGameEvent=EXIT;
+			}
+		}
+		else if(stage==SELECT_LOCAL){
+			if(nowMenuChoosing==SELECT_LOCAL_CLASSIC){
+				stage=GAME_START,nowGameEvent=LOCAL_CLASSIC_GAME;
+			}else if(nowMenuChoosing==SELECT_LOCAL_THREE){
+				stage=GAME_START,nowGameEvent=LOCAL_THREE_GAME;
+			}else if(nowMenuChoosing==SELECT_LOCAL_RETURN){
+				changeToMainMenu();
+			}
+		}
+	}
+}
+using namespace APP;
+int main(){
+	APP::APP_RUNNING = true;
+	
+	WIN_CONTROL::CONSOLE_INIT();
 	GAME::Troops::troopImageInit();
 	GAME::initCampTypeImages();
-	readMapFromFile();
-	gameInit();
-	
-	GAME_FLAG = 1;
 	SetConsoleTitle("War Game");
-	while(GAME_FLAG){
-		gameRun();
+	while(APP::APP_RUNNING){
+		GAME_FLAG = 0;
+		//on Menu Frame
+		changeToMainMenu();
+		cls();
+		APP::showMenuFrame();
+		while(APP::ON_MENU_SCENE){
+			getMouse();
+			
+			if(upPressed){
+				upPressed=false;
+				nowMenuChoosing=(nowMenuChoosing+nowMenuBarSize-1)%nowMenuBarSize;
+				showMenuFrame();
+			}
+			if(downPressed){
+				downPressed=false;
+				nowMenuChoosing=(nowMenuChoosing+1)%nowMenuBarSize;
+				showMenuFrame();
+			}
+			if(spacePressed){
+				spacePressed=false;
+				menuConfirm();
+				if(nowGameEvent==EXIT)exit(0);
+				
+				if(nowGameEvent!=ON_MENU){
+					ON_MENU_SCENE=false;
+				}
+				else{
+					cls();
+					showMenuFrame();
+				}
+				
+			}
+		}
+		if(nowGameEvent==LOCAL_CLASSIC_GAME){
+			gameStart();
+		}
 	}
+	
+	
 }
 
 #endif
