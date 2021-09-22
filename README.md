@@ -1,4 +1,4 @@
-# Unnamed Game
+# War Game
 一个有趣的棋类游戏。
 
 ## 玩法

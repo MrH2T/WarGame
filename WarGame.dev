@@ -1,6 +1,6 @@
 [Project]
-FileName=UnnamedGame.dev
-Name=UnnamedGame
+FileName=WarGame.dev
+Name=WarGame
 Type=1
 Ver=2
 ObjFiles=
@@ -61,7 +61,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit2]
-FileName=src\unnamedgame.cpp
+FileName=src\wargame.cpp
 CompileCpp=1
 Folder=
 Compile=1
