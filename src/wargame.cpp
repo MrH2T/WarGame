@@ -327,9 +327,9 @@ namespace GAME{
 		return !troops[tar].moved;
 	}
 	bool enableToAct(TroopId tar){
-		if(troops[tar].type==Troops::CHARGER)return false;
 		if(troops[tar].acted)return false;
 		if(map[troops[tar].x][troops[tar].y]==SCAMP)return true;
+		if(troops[tar].type==Troops::CHARGER)return false;
 		memset(bookForDfs,0x3f,sizeof(bookForDfs));
 		atkable=0;
 		checkAttackDfs(troops[tar].x,troops[tar].y,0,troops[tar].type.sho,troops[tar].tm);
