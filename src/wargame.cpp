@@ -534,7 +534,7 @@ namespace GAME{
 
 		turn();
 		nowTurn^=1;
-		Sleep(500);
+		Sleep(300);
 		spacePressed=0;
 	}
 	
@@ -639,7 +639,7 @@ namespace GAME{
 		bcHp=wcHp=6;
 		bcPos=COORD{-10,-10};
 		wcPos=COORD{-10,-10};
-		drawMap();
+		
 		memset(map,0,sizeof(map));
 		memset(tmap,0,sizeof(tmap));
 		memset(cmap,0,sizeof(ctmap));
@@ -648,6 +648,8 @@ namespace GAME{
 //Choose Camp: Abandoned
 //		chooseCamp(0);
 //		chooseCamp(1);
+	}
+	void userInit(){
 		placeTroop(0);
 		placeTroop(1);
 		nowTurn=0;
@@ -655,10 +657,13 @@ namespace GAME{
 	}
 	
 	void gameStart(){
-		readMapFromFile();
 		gameInit();
-		GAME_FLAG = 1;
+		readMapFromFile();
+		drawMap();
 		drawMapItem();
+		userInit();
+		drawMapItem();
+		GAME_FLAG = 1;
 		while(GAME_FLAG){
 			gameRun();
 		}
@@ -804,6 +809,7 @@ int main(){
 				
 			}
 		}
+		cls();
 		if(nowGameEvent==LOCAL_CLASSIC_GAME){
 			gameStart();
 		}
