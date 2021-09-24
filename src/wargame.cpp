@@ -121,7 +121,7 @@ namespace GAME{
 		else{
 			if(map[x][y]==MOUNT){
 				setColor(c_BLACK,ctmap[x][y]?ctmap[x][y]:cmap[x][y]);
-				std::cout<<"MMM";
+				std::cout<<"   ";
 				setColor(c_DARKGREY,c_GREY);
 			}
 			else if(map[x][y]==RIVER){
@@ -161,7 +161,7 @@ namespace GAME{
 				char chr;
 				fscanf(fin,"%c",&chr);
 				if(chr=='M'){
-					cmap[i][j]=c_GREY;
+					cmap[i][j]=c_BLACK;
 					map[i][j]=MOUNT;
 				}
 				else if(chr=='R'){
@@ -199,6 +199,19 @@ namespace GAME{
 		}
 		
 	}
+	void drawMapItem(int fx=0,int fy=0,int tx=mapHeight-1,int ty=mapWidth-1){
+		//x'=2x+1,y'=4y+1
+		if(fx<0)fx=0;
+		if(fy<0)fy=0;
+		if(tx>=mapHeight)tx=mapHeight-1;
+		if(ty>=mapWidth)ty=mapWidth-1;
+		for(int i=fx;i<=tx;i++){
+			for(int j=fy;j<=ty;j++){
+				goxy(2*i+1,4*j+1);
+				printItem(i,j);
+			}
+		}
+	}
 	void drawMap(){
 		setColor(c_DGREY,c_GREY);
 		goxy(0,0);
@@ -212,7 +225,7 @@ namespace GAME{
 			std::cout<<tab[1];
 			for(short y=0;y<mapWidth;y++){
 				
-				printItem(x,y);
+				std::cout<<"   ";
 				std::cout<<tab[1];
 			}
 			goxy(x*2+2,0);
@@ -225,7 +238,7 @@ namespace GAME{
 		std::cout<<tab[1];
 		for(short y=0;y<mapWidth;y++){
 			
-			printItem(mapHeight-1,y);
+			std::cout<<"   ";
 			std::cout<<tab[1];
 		}
 		goxy(mapHeight*2,0);
@@ -316,7 +329,7 @@ namespace GAME{
 		short x=troops[tar].x,y=troops[tar].y;
 		dfsClear();
 		drawMoveDfs(x,y,0,troops[tar].type.mov,troops[tar].tm);
-		drawMap();
+		drawMapItem(x-troops[tar].type.mov,y-troops[tar].type.mov,x+troops[tar].type.mov,y+troops[tar].type.mov);
 		while(1){
 			getMouse();
 			if(mouseClicked){
@@ -326,7 +339,7 @@ namespace GAME{
 				short dx=blockPos.Y,dy=blockPos.X;
 				if(dx==x&&dy==y){
 					memset(ctmap,0,sizeof(ctmap));
-					drawMap();
+					drawMapItem(x-troops[tar].type.mov,y-troops[tar].type.mov,x+troops[tar].type.mov,y+troops[tar].type.mov);
 					return;
 				}
 				else{
@@ -336,7 +349,7 @@ namespace GAME{
 						troops[tar].moved=1;
 						memset(bookForDfs,0,sizeof(bookForDfs));
 						memset(ctmap,0,sizeof(ctmap));
-						drawMap();
+						drawMapItem(x-troops[tar].type.mov,y-troops[tar].type.mov,x+troops[tar].type.mov,y+troops[tar].type.mov);
 				//		goxy(10,50);printf("FCCF");
 						return;
 					}else continue;
@@ -353,7 +366,7 @@ namespace GAME{
 			if(dx<0||dy<0||dx>mapHeight||dy>mapWidth||isTroopAt(dx,dy)||isMountAt(dx,dy)||isCampAt(dx,dy)&&getCampAt(dx,dy)!=troops[tar].tm||isRiverAt(dx,dy))continue;
 			ctmap[dx][dy]=c_PURPLE;
 		}
-		drawMap();
+		drawMapItem(x-1,y-1,x+1,y+1);
 		while(1){
 			if(!enableToAct(tar))return;
 			getMouse();
@@ -361,10 +374,10 @@ namespace GAME{
 				rightClicked=false;
 				if(!inBlock(lastClickedPos))continue;
 				COORD blockPos=clickWhichBlock(lastClickedPos);
-				short x=blockPos.Y,y=blockPos.X;
-				if(x==troops[tar].x&&y==troops[tar].y){
+				short dx=blockPos.Y,dy=blockPos.X;
+				if(dx==troops[tar].x&&dy==troops[tar].y){
 					dfsClear();
-					drawMap();
+					drawMapItem(x-1,y-1,x+1,y+1);
 					return;
 				}
 			}
@@ -381,7 +394,7 @@ namespace GAME{
 					troops.push_back(nt);
 					tmap[dx][dy]=tmap[x][y];
 					dfsClear();
-					drawMap();
+					drawMapItem(x-1,y-1,x+1,y+1);
 					return;
 				}
 			}
@@ -390,8 +403,8 @@ namespace GAME{
 	void selectAttack(TroopId tar){
 		short x=troops[tar].x,y=troops[tar].y;
 		dfsClear();
-		drawAttackDfs(troops[tar].x,troops[tar].y,0,troops[tar].type.sho,troops[tar].tm);
-		drawMap();
+		drawAttackDfs(x,y,0,troops[tar].type.sho,troops[tar].tm);
+		drawMapItem(x-troops[tar].type.sho,y-troops[tar].type.sho,x+troops[tar].type.sho,y+troops[tar].type.sho);
 		while(1){
 			if(!enableToAct(tar))return;
 			getMouse();
@@ -402,9 +415,8 @@ namespace GAME{
 				short dx=blockPos.Y,dy=blockPos.X;
 				if(dx==troops[tar].x&&dy==troops[tar].y){
 					dfsClear();
-					drawMap();
+					drawMapItem(x-troops[tar].type.sho,y-troops[tar].type.sho,x+troops[tar].type.sho,y+troops[tar].type.sho);
 					return;
-					
 				}
 			}
 			if(mouseClicked){
@@ -419,17 +431,17 @@ namespace GAME{
 						atkOneTurn+=troops[tar].type.atk;
 						troops[tar].acted=1;
 						dfsClear();
-						drawMap();
-						
+						drawMapItem(x-troops[tar].type.sho,y-troops[tar].type.sho,x+troops[tar].type.sho,y+troops[tar].type.sho);
 						return;
 					}
 					
 					TroopId target=getTroopAt(dx,dy);
 					troops[tar].acted=1;
+					dfsClear();
+					drawMapItem(x-troops[tar].type.sho,y-troops[tar].type.sho,x+troops[tar].type.sho,y+troops[tar].type.sho);
 					troops[target].type.hp-=troops[tar].type.atk;
 					checkDie(target);
-					dfsClear();
-					drawMap();
+					drawMapItem(dx,dy,dx,dy);
 					return;
 				}
 			}
@@ -471,7 +483,8 @@ namespace GAME{
 		dfsClear();
 		Troops::clearUsedTags();
 		atkOneTurn=0;
-		drawMap();
+	//	drawMap();
+	//	drawMapItem();
 		while(1) {
 			
 			if(won()){
@@ -482,7 +495,7 @@ namespace GAME{
 			SetConsoleTitle((string("War Game - ")+(nowTurn?"WHITE":"BLACK")+"\'s Turn : "+ char(wcHp+'0') + " w : b "+ char(bcHp+'0')).c_str());
 			Sleep(50);
 			mouseClicked=rightClicked=spacePressed=0;
-			drawMap();
+		//	drawMap();
 			WIN_CONTROL::MOUSE::getMouse();
 			if(onEndTurn()){
 				return;
@@ -519,7 +532,7 @@ namespace GAME{
 	void gameRun(){
 		WIN_CONTROL::hideCursor();
 		Troops::clearUsedTags();
-		
+
 		turn();
 		nowTurn^=1;
 		Sleep(500);
@@ -567,11 +580,11 @@ namespace GAME{
 			if(mouseClicked){
 				mouseClicked=false;
 				if(nowType==EMPTY){
-					drawMap();
+					drawMapItem(x,y);
 					return false;
 				}
 				placeTroopAt(nowType,x,y,tm);
-				drawMap();
+				drawMapItem(x,y);
 				return true;
 			}
 			if(rightClicked){
@@ -579,7 +592,7 @@ namespace GAME{
 				nowChoose=(nowChoose+1)%tplen;
 				nowType=types[nowChoose];
 		//		goxy(10,50);printf("%d  ",nowChoose);
-				drawMap();
+				drawMapItem(x,y);
 			}
 		}
 	}
@@ -593,10 +606,11 @@ namespace GAME{
 				if(getSideCampAt(x,y)==tm)ctmap[x][y]=c_LYELLOW;
 			}
 		}
-		drawMap();
+		drawMapItem();
 		while(1){
 			getMouse();
 			if(onEndTurn()&&troopPlaced==4){
+				dfsClear();
 				return;
 			}
 			if(mouseClicked){
@@ -639,8 +653,8 @@ namespace GAME{
 	void gameStart(){
 		readMapFromFile();
 		gameInit();
-		
 		GAME_FLAG = 1;
+		drawMapItem();
 		while(GAME_FLAG){
 			gameRun();
 		}
