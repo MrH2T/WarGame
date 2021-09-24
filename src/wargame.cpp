@@ -267,7 +267,7 @@ namespace GAME{
 	int bookForDfs[30][30];
 	void drawMoveLine(short x,short y,int moved,int movlim,int originTm,int p){
 		if(moved>movlim)return;
-		if(map[x][y]!=RIVER&&!isTroopAt(x,y))ctmap[x][y]=c_LIME;
+		if(map[x][y]!=RIVER&&(!isTroopAt(x,y)||Troops::troops[getTroopAt(x,y)].type.hp<=Troops::CHARGER.atk))ctmap[x][y]=c_LIME;
 		if(moved>bookForDfs[x][y])return;
 		bookForDfs[x][y]=moved;
 		short dx=x+dir[p][0],dy=y+dir[p][1];
@@ -327,6 +327,7 @@ namespace GAME{
 		return !troops[tar].moved;
 	}
 	bool enableToAct(TroopId tar){
+		if(troops[tar].type==Troops::CHARGER)return false;
 		if(troops[tar].acted)return false;
 		if(map[troops[tar].x][troops[tar].y]==SCAMP)return true;
 		memset(bookForDfs,0x3f,sizeof(bookForDfs));
@@ -363,28 +364,50 @@ namespace GAME{
 				else{
 					if(ctmap[dx][dy]==c_LIME){//enable move to
 						if(troops[tar].type==Troops::CHARGER){
-							if(dx==x)
-								for(int i=0;i<troops.size();i++){
-									if(troops[i].x==x && troops[i].y > min(y,dy) && troops[i].y < max(y,dy)){
-										troops[i].type.hp--;
-										checkDie(i);
-										drawMapItem(troops[i].x,troops[i].y,troops[i].x,troops[i].y);
-									}
+							if(isTroopAt(dx,dy)){
+								tmap[x][y]=0;
+								Troop zzzlalala=troops[tar];
+								clearTroopAt(x,y);
+								zzzlalala.x=dx,zzzlalala.y=dy;
+								troops[getTroopAt(dx,dy)].type.hp--;
+								checkDie(getTroopAt(dx,dy));
+								tmap[dx][dy]=1;
+								zzzlalala.moved=1;
+								troops.push_back(zzzlalala);
+							}
+							else {
+								troops[tar].moved=1;
+								troops[tar].x=dx,troops[tar].y=dy;
+								swap(tmap[x][y],tmap[dx][dy]);
+							}
+							if(x==dx){
+								for(short i=(y<dy?y+1:dy+1);i<=(y<dy?dy-1:y-1);i++){
+									if(!isTroopAt(x,i))continue;
+									TroopId target=getTroopAt(x,i);
+									troops[target].type.hp--;
+									checkDie(target);
+									drawMapItem(x,i,x,i);
 								}
-							else if(dy==y)
-								for(int i=0;i<troops.size();i++){
-									if(troops[i].y==y && troops[i].x > min(x,dx) && troops[i].x < max(x,dx)){
-										troops[i].type.hp--;
-										checkDie(i);
-										drawMapItem(troops[i].x,troops[i].y,troops[i].x,troops[i].y);
-									}
+								
+							}
+							else if(y==dy){
+								for(short i=(x<dx?x+1:dx+1);i<=(x<dx?dx-1:x-1);i++){
+									if(!isTroopAt(i,y))continue;
+									TroopId target=getTroopAt(i,y);
+									troops[target].type.hp--;
+									checkDie(target);
+									drawMapItem(i,y,i,y);
 								}
+							}
+							drawMapItem(dx,dy,dx,dy);
+							dfsClear();
+							drawMapItem(x-Troops::CHARGER.mov,y-Troops::CHARGER.mov,x+Troops::CHARGER.mov,y+Troops::CHARGER.mov);
+							return;
 						}
 						std::swap(tmap[dx][dy],tmap[x][y]);
 						troops[tar].x=dx,troops[tar].y=dy;
 						troops[tar].moved=1;
-						memset(bookForDfs,0,sizeof(bookForDfs));
-						memset(ctmap,0,sizeof(ctmap));
+						dfsClear();
 						drawMapItem(x-troops[tar].type.mov,y-troops[tar].type.mov,x+troops[tar].type.mov,y+troops[tar].type.mov);
 				//		goxy(10,50);printf("FCCF");
 						return;
@@ -437,6 +460,7 @@ namespace GAME{
 		}
 	}
 	void selectAttack(TroopId tar){
+		if(troops[tar].type==Troops::CHARGER)return;
 		short x=troops[tar].x,y=troops[tar].y;
 		dfsClear();
 		drawAttackDfs(x,y,0,troops[tar].type.sho,troops[tar].tm);
