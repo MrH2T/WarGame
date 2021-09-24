@@ -39,7 +39,7 @@ namespace GAME{
 			}
 		}
 	}
-	using Troops::troops;
+	using namespace Troops;
 	
 	typedef int TroopId;
 	#define MOUNT 0x11
@@ -55,14 +55,28 @@ namespace GAME{
 	#define BLACK 0
 	#define WHITE 1
 	
+	//map
 	int mapHeight,mapWidth;
 	int map[30][30],tmap[30][30],cmap[30][30];
 	int ctmap[30][30];
+	//game
 	int nowTurn;
 	COORD bcPos,wcPos;
 	int bcHp,wcHp;
-//	bool onPlacingCamp;
+	//dfs searching	
+	const int dir[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
+	int bookForDfs[30][30];
 	
+	bool atkable;
+	int atkOneTurn=0; 
+//Abandoned
+//	bool onPlacingCamp;
+	//troop choosing
+	int mctSize=8,sctSize=3;
+	TroopType mainCampType[100];
+	TroopType sideCampType[100];
+	
+	//game flag
 	bool GAME_FLAG;
 	bool inBlock(COORD pos){
 		swap(pos.X,pos.Y);
@@ -263,8 +277,6 @@ namespace GAME{
 		}
 	}
 	
-	const int dir[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
-	int bookForDfs[30][30];
 	void drawMoveLine(short x,short y,int moved,int movlim,int originTm,int p){
 		if(moved>movlim)return;
 		if(map[x][y]!=RIVER&&(!isTroopAt(x,y)||Troops::troops[getTroopAt(x,y)].type.hp<=Troops::CHARGER.atk))ctmap[x][y]=c_LIME;
@@ -288,8 +300,6 @@ namespace GAME{
 		}
 	}
 	
-	bool atkable;
-	int atkOneTurn=0; 
 	void drawAttackDfs(short x,short y,int moved,int movlim,int originTm,int met=0){
 		if(moved>movlim)return;
 		if(isTroopAt(x,y)&&troops[getTroopAt(x,y)].tm!=originTm||isCampAt(x,y)&&getCampAt(x,y)!=originTm)ctmap[x][y]=c_RED,atkable=1;
@@ -607,15 +617,11 @@ namespace GAME{
 		tmap[x][y]=tm?TROOP_W:TROOP_B;
 		
 	}
-	using namespace Troops;
 	void printCertainItem(short x,short y,int tm,TroopType tp){
 		goxy(2*x+1,4*y+1);
 		if(tp==EMPTY)setColor(isSideCampAt(x,y)?c_LYELLOW:tm?c_WHITE:c_DGREY,isSideCampAt(x,y)?c_LYELLOW:tm?c_WHITE:c_DGREY),std::cout<<"   ";
 		else std::cout<<tp.icon[tm]<<tp.hp;
 	}
-	int mctSize=8,sctSize=3;
-	TroopType mainCampType[100];
-	TroopType sideCampType[100];
 	void initCampTypeImages(){
 		//use after Troops::troopImageInit()
 		mainCampType[0]=SHIELD;
@@ -744,6 +750,11 @@ namespace APP{
 	
 	GameEvent nowGameEvent;
 	
+	string mainMenuBar[]={"Start Local Game", "Start Internet Game","Exit"};
+	const int mainMenuBarSize=3;
+	string selectLocalMenuBar[]={"Classic Mode","Three Countries Mode","Return"};
+	const int slMenuBarSize=3;
+	int nowMenuChoosing,nowMenuBarSize;
 	
 	//nowGameEvent
 	#define ON_MENU 0x00
@@ -769,11 +780,6 @@ namespace APP{
 	#define SELECT_LOCAL_CLASSIC 0
 	#define SELECT_LOCAL_THREE 1
 	#define SELECT_LOCAL_RETURN 2
-	string mainMenuBar[]={"Start Local Game", "Start Internet Game","Exit"};
-	const int mainMenuBarSize=3;
-	string selectLocalMenuBar[]={"Classic Mode","Three Countries Mode","Return"};
-	const int slMenuBarSize=3;
-	int nowMenuChoosing,nowMenuBarSize;
 	void changeToMainMenu(){
 		ON_MENU_SCENE=1,stage=MAIN_PAGE,nowMenuChoosing=0;
 		nowGameEvent=ON_MENU;
