@@ -20,6 +20,7 @@ namespace GAME{
 			CROSSBOW(1,1,1,4),
 			LANCE(2,1,3,1),
 			SWORD(1,2,3,1),
+			CHARGER(1,1,7,0),
 			EMPTY(0,0,0,0);
 		std::vector<Troop> troops;
 		void troopImageInit(){
@@ -29,6 +30,7 @@ namespace GAME{
 			CROSSBOW.setDefaultIcon(items[4],items[5]);
 			LANCE.setDefaultIcon(items[0],items[1]);
 			SWORD.setDefaultIcon(items[6],items[7]);
+			CHARGER.setDefaultIcon(items[12],items[13]);
 			EMPTY.setDefaultIcon("   ","   ");
 		}
 		void clearUsedTags(){
@@ -263,6 +265,16 @@ namespace GAME{
 	
 	const int dir[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
 	int bookForDfs[30][30];
+	void drawMoveLine(short x,short y,int moved,int movlim,int originTm,int p){
+		if(moved>movlim)return;
+		if(map[x][y]!=RIVER&&!isTroopAt(x,y))ctmap[x][y]=c_LIME;
+		if(moved>bookForDfs[x][y])return;
+		bookForDfs[x][y]=moved;
+		short dx=x+dir[p][0],dy=y+dir[p][1];
+		if(dx<0||dy<0||dx>=mapHeight||dy>=mapWidth||isMountAt(dx,dy)
+				||isCampAt(dx,dy)&&getCampAt(dx,dy)!=originTm)return;
+		drawMoveLine(dx,dy,moved+1,movlim,originTm,p);
+	}
 	void drawMoveDfs(short x,short y,int moved,int movlim,int originTm){
 		if(moved>movlim)return;
 		if(map[x][y]!=RIVER)ctmap[x][y]=c_LIME;
@@ -328,7 +340,13 @@ namespace GAME{
 	void selectMove(TroopId tar){
 		short x=troops[tar].x,y=troops[tar].y;
 		dfsClear();
-		drawMoveDfs(x,y,0,troops[tar].type.mov,troops[tar].tm);
+		if(troops[tar].type==Troops::CHARGER){
+			for(int i=0;i<4;i++)
+				drawMoveLine(x,y,0,6,troops[tar].tm,i);
+		}
+		else{
+			drawMoveDfs(x,y,0,troops[tar].type.mov,troops[tar].tm);
+		}
 		drawMapItem(x-troops[tar].type.mov,y-troops[tar].type.mov,x+troops[tar].type.mov,y+troops[tar].type.mov);
 		while(1){
 			getMouse();
@@ -344,6 +362,24 @@ namespace GAME{
 				}
 				else{
 					if(ctmap[dx][dy]==c_LIME){//enable move to
+						if(troops[tar].type==Troops::CHARGER){
+							if(dx==x)
+								for(int i=0;i<troops.size();i++){
+									if(troops[i].x==x && troops[i].y > min(y,dy) && troops[i].y < max(y,dy)){
+										troops[i].type.hp--;
+										checkDie(i);
+										drawMapItem(troops[i].x,troops[i].y,troops[i].x,troops[i].y);
+									}
+								}
+							else if(dy==y)
+								for(int i=0;i<troops.size();i++){
+									if(troops[i].y==y && troops[i].x > min(x,dx) && troops[i].x < max(x,dx)){
+										troops[i].type.hp--;
+										checkDie(i);
+										drawMapItem(troops[i].x,troops[i].y,troops[i].x,troops[i].y);
+									}
+								}
+						}
 						std::swap(tmap[dx][dy],tmap[x][y]);
 						troops[tar].x=dx,troops[tar].y=dy;
 						troops[tar].moved=1;
@@ -506,7 +542,8 @@ namespace GAME{
 				short x=blockPos.Y,y=blockPos.X;
 				if(!isTroopAt(x,y))continue;
 				TroopId tar=getTroopAt(x,y);
-				if(enableToMove(tar)&&troops[tar].tm==nowTurn)selectMove(tar);
+				if(enableToMove(tar)&&troops[tar].tm==nowTurn)
+					selectMove(tar);
 				if(won())return;
 				if(nowMovedAll())return;
 			}
@@ -552,7 +589,7 @@ namespace GAME{
 		if(tp==EMPTY)setColor(isSideCampAt(x,y)?c_LYELLOW:tm?c_WHITE:c_DGREY,isSideCampAt(x,y)?c_LYELLOW:tm?c_WHITE:c_DGREY),std::cout<<"   ";
 		else std::cout<<tp.icon[tm]<<tp.hp;
 	}
-	int mctSize=7,sctSize=3;
+	int mctSize=8,sctSize=3;
 	TroopType mainCampType[100];
 	TroopType sideCampType[100];
 	void initCampTypeImages(){
@@ -563,7 +600,8 @@ namespace GAME{
 		mainCampType[3]=CROSSBOW;
 		mainCampType[4]=LANCE;
 		mainCampType[5]=SWORD;
-		mainCampType[6]=EMPTY;
+		mainCampType[6]=CHARGER;
+		mainCampType[7]=EMPTY;
 		
 		sideCampType[0]=SHIELD;
 		sideCampType[1]=CROSSBOW;

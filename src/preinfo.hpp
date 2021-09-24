@@ -21,7 +21,7 @@ tabs:
 */
 	string items[]={"\u25a0","\u25a1","\u25b2","\u25b3",
 		"\u25b6","\u25b7","\u25c6","\u25c7","\u25cf","\u25cb",
-		"\u2605","\u2606"};
+		"\u2605","\u2606","\u2660","\u2664"};
 /*
 items:
 0,1-FESquare
@@ -112,22 +112,14 @@ namespace WIN_CONTROL{
 			ReadConsoleInput(hIn,&ms_rec,1,&ms_res);
 			if(ms_rec.EventType==MOUSE_EVENT){
 				cr_pos=ms_rec.Event.MouseEvent.dwMousePosition;
-//				GetConsoleScreenBufferInfo(hOut,&binfo);
-//				goxy(20,40);
-//				printf("%d %d          \n",cr_pos.X,cr_pos.Y);
 				SetConsoleCursorPosition(hOut,binfo.dwCursorPosition);
 				mouseNowPos=cr_pos;
-//				goxy(5,50);
-//				printf("%d %d %d",ms_rec.Event.MouseEvent.dwButtonState,FROM_LEFT_1ST_BUTTON_PRESSED,RIGHTMOST_BUTTON_PRESSED);
 				if(ms_rec.Event.MouseEvent.dwButtonState==FROM_LEFT_1ST_BUTTON_PRESSED){
-			//		if(mouseClicked)return;
 					mouseClicked=true;rightClicked=false;
 					lastClickedPos=cr_pos;
 				}
 				if(ms_rec.Event.MouseEvent.dwButtonState==RIGHTMOST_BUTTON_PRESSED){
 					rightClicked=true;mouseClicked=false;
-//					goxy(10,50);
-//					printf("FCCF");
 					lastClickedPos=cr_pos;
 				}
 			}
