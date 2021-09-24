@@ -59,7 +59,7 @@ namespace GAME{
 	int nowTurn;
 	COORD bcPos,wcPos;
 	int bcHp,wcHp;
-	bool onPlacingCamp;
+//	bool onPlacingCamp;
 	
 	bool GAME_FLAG;
 	bool inBlock(COORD pos){
@@ -486,17 +486,16 @@ namespace GAME{
 	//	drawMap();
 	//	drawMapItem();
 		while(1) {
-			
+			SetConsoleTitle((string("War Game - ")+(nowTurn?"WHITE":"BLACK")+"\'s Turn : "+ char(wcHp+'0') + " w : b "+ char(bcHp+'0')).c_str());
+			Sleep(50);
+			mouseClicked=rightClicked=spacePressed=0;
+			WIN_CONTROL::MOUSE::getMouse();
 			if(won()){
 				GAME_FLAG=false;
 				return;
 			}
-			
-			SetConsoleTitle((string("War Game - ")+(nowTurn?"WHITE":"BLACK")+"\'s Turn : "+ char(wcHp+'0') + " w : b "+ char(bcHp+'0')).c_str());
-			Sleep(50);
-			mouseClicked=rightClicked=spacePressed=0;
+			if(nowMovedAll())return;
 		//	drawMap();
-			WIN_CONTROL::MOUSE::getMouse();
 			if(onEndTurn()){
 				return;
 			}
@@ -641,6 +640,11 @@ namespace GAME{
 		bcPos=COORD{-10,-10};
 		wcPos=COORD{-10,-10};
 		drawMap();
+		memset(map,0,sizeof(map));
+		memset(tmap,0,sizeof(tmap));
+		memset(cmap,0,sizeof(ctmap));
+		memset(ctmap,0,sizeof(ctmap));
+		dfsClear();
 //Choose Camp: Abandoned
 //		chooseCamp(0);
 //		chooseCamp(1);
@@ -768,9 +772,10 @@ int main(){
 	while(APP::APP_RUNNING){
 		GAME_FLAG = 0;
 		//on Menu Frame
-		changeToMainMenu();
 		cls();
+		changeToMainMenu();
 		APP::showMenuFrame();
+		upPressed=downPressed=spacePressed=0;
 		while(APP::ON_MENU_SCENE){
 			getMouse();
 			
