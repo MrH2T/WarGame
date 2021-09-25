@@ -21,7 +21,7 @@ tabs:
 */
 	string items[]={"\u25a0","\u25a1","\u25b2","\u25b3",
 		"\u25b6","\u25b7","\u25c6","\u25c7","\u25cf","\u25cb",
-		"\u2605","\u2606","\u2660","\u2664"};
+		"\u2605","\u2606","\u2660","\u2664","\u2663","\u2667"};
 /*
 items:
 0,1-FESquare
@@ -37,16 +37,17 @@ namespace BASIC_DATA{
 	class TroopType{
 		public:
 			string icon[2];
+			int typeUuid;
 			int hp,atk,mov,sho;
 			void setDefaultIcon(string s0,string s1){
 				icon[0]=s0,icon[1]=s1;
 			}
 			//mov=move sho=shoot tm=team
 			TroopType(){}
-			TroopType(int h,int a,int m,int s):
-				hp(h),atk(a),mov(m),sho(s){}
+			TroopType(int h,int a,int m,int s,int uuid):
+				hp(h),atk(a),mov(m),sho(s),typeUuid(uuid){}
 			bool operator==(const TroopType bbb)const{
-				return hp==bbb.hp&&atk==bbb.atk&&mov==bbb.mov&&sho==bbb.sho;
+				return typeUuid==bbb.typeUuid;
 			}
 	};
 	

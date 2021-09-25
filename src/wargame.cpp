@@ -14,14 +14,15 @@ namespace GAME{
 	using BASIC_DATA::Troop;
 	using BASIC_DATA::TroopType;
 	namespace Troops{
-		TroopType SHIELD(3,2,1,1),
-			HORSE(1,1,4,1),
-			BOW(1,1,2,3),
-			CROSSBOW(1,1,1,4),
-			LANCE(2,1,3,1),
-			SWORD(1,2,3,1),
-			CHARGER(1,1,7,0),
-			EMPTY(0,0,0,0);
+		TroopType EMPTY(0,0,0,0,0x00),
+			SHIELD(3,2,1,1,0x01),
+			HORSE(1,1,4,1,0x02),
+			BOW(1,1,2,3,0x03),
+			CROSSBOW(1,1,1,4,0x04),
+			LANCE(2,1,3,1,0x05),
+			SWORD(1,2,3,1,0x06),
+			CHARGER(1,1,7,0,0x07),
+			MORTAR(1,1,1,4,0x08);
 		std::vector<Troop> troops;
 		void troopImageInit(){
 			SHIELD.setDefaultIcon(items[8],items[9]);
@@ -31,6 +32,7 @@ namespace GAME{
 			LANCE.setDefaultIcon(items[0],items[1]);
 			SWORD.setDefaultIcon(items[6],items[7]);
 			CHARGER.setDefaultIcon(items[12],items[13]);
+			MORTAR.setDefaultIcon(items[14],items[15]);
 			EMPTY.setDefaultIcon("   ","   ");
 		}
 		void clearUsedTags(){
@@ -72,7 +74,7 @@ namespace GAME{
 //Abandoned
 //	bool onPlacingCamp;
 	//troop choosing
-	int mctSize=8,sctSize=3;
+	int mctSize=9,sctSize=3;
 	TroopType mainCampType[100];
 	TroopType sideCampType[100];
 	
@@ -83,6 +85,7 @@ namespace GAME{
 		if(pos.X%2==0||pos.Y%4==0||pos.Y>mapWidth*4+1||pos.X>mapHeight*2+1)return false;
 		return true;
 	}
+	//mouse and blocks
 	COORD clickWhichBlock(COORD pos){
 		if(!inBlock(pos))return {-1,-1};
 		return COORD{(SHORT)pos.X/4,(SHORT)pos.Y/2};
@@ -127,6 +130,8 @@ namespace GAME{
 	void clearTroopAt(short x,short y){
 		troops.erase(troops.begin()+getTroopAt(x,y));
 	}
+	
+	//prints
 	void printItem(short x,short y){
 		if(isTroopAt(x,y)){
 			TroopId tpa=getTroopAt(x,y);
@@ -166,54 +171,6 @@ namespace GAME{
 				setColor(c_DARKGREY,c_GREY);
 			}
 		}
-	}
-	void readMapFromFile(){
-	//	FILE *fout=fopen("fccf","w");
-	//	fprintf(fout," ");
-		FILE *fin=fopen("map.txt","r");
-		fscanf(fin,"%d %d\n",&mapHeight,&mapWidth);
-		for(short i=0;i<mapHeight;i++){
-			for(short j=0;j<mapWidth;j++){
-				char chr;
-				fscanf(fin,"%c",&chr);
-				if(chr=='M'){
-					cmap[i][j]=c_BLACK;
-					map[i][j]=MOUNT;
-				}
-				else if(chr=='R'){
-					cmap[i][j]=c_SKYBLUE;
-					map[i][j]=RIVER;
-				}
-				else if(chr=='.'){
-					cmap[i][j]=c_GREY;
-				}
-				else if(chr=='C'){
-					cmap[i][j]=c_YELLOW;
-					map[i][j]=SCAMP;
-				}
-				else if(chr=='W'){
-					map[i][j]=CAMP_W;
-					cmap[i][j]=c_WHITE;
-				}
-				else if(chr=='B'){
-					map[i][j]=CAMP_B;
-					cmap[i][j]=c_DGREY;
-				}
-				else if(chr=='w'){
-					map[i][j]=CSIDE_W;
-					cmap[i][j]=c_GREY;
-				}
-				else if(chr=='b'){
-					map[i][j]=CSIDE_B;
-					cmap[i][j]=c_GREY;
-				}
-				else {
-					cmap[i][j]=c_GREY;
-				}
-			}
-			fscanf(fin,"\n");
-		}
-		
 	}
 	void drawMapItem(int fx=0,int fy=0,int tx=mapHeight-1,int ty=mapWidth-1){
 		//x'=2x+1,y'=4y+1
@@ -264,20 +221,60 @@ namespace GAME{
 		std::cout<<tab[0]<<tab[0]<<tab[0]<<tab[5];
 	}
 	
-	bool onEndTurn(){
-		if(spacePressed){spacePressed=false;return true;}
-		else return false;
-	}
-	
-	void checkDie(TroopId tar){
-		if(troops[tar].type.hp<=0){
-			tmap[troops[tar].x][troops[tar].y]=0;
-		 	troops.erase(troops.begin()+tar);
-			
+	//files
+	void readMapFromFile(){
+	//	FILE *fout=fopen("fccf","w");
+	//	fprintf(fout," ");
+		FILE *fin=fopen("map.txt","r");
+		fscanf(fin,"%d %d\n",&mapHeight,&mapWidth);
+		for(short i=0;i<mapHeight;i++){
+			for(short j=0;j<mapWidth;j++){
+				char chr;
+				fscanf(fin,"%c",&chr);
+				if(chr=='M'){
+					cmap[i][j]=c_BLACK;
+					map[i][j]=MOUNT;
+				}
+				else if(chr=='R'){
+					cmap[i][j]=c_SKYBLUE;
+					map[i][j]=RIVER;
+				}
+				else if(chr=='.'){
+					cmap[i][j]=c_GREY;
+				}
+				else if(chr=='C'){
+					cmap[i][j]=c_YELLOW;
+					map[i][j]=SCAMP;
+				}
+				else if(chr=='W'){
+					map[i][j]=CAMP_W;
+					cmap[i][j]=c_WHITE;
+				}
+				else if(chr=='B'){
+					map[i][j]=CAMP_B;
+					cmap[i][j]=c_DGREY;
+				}
+				else if(chr=='w'){
+					map[i][j]=CSIDE_W;
+					cmap[i][j]=c_GREY;
+				}
+				else if(chr=='b'){
+					map[i][j]=CSIDE_B;
+					cmap[i][j]=c_GREY;
+				}
+				else {
+					cmap[i][j]=c_GREY;
+				}
+			}
+			fscanf(fin,"\n");
 		}
+		
 	}
 	
-	void drawMoveLine(short x,short y,int moved,int movlim,int originTm,int p){
+	//block dfs
+	
+	//move
+	void drawMoveCharger(short x,short y,int moved,int movlim,int originTm,int p){
 		if(moved>movlim)return;
 		if(map[x][y]!=RIVER&&(!isTroopAt(x,y)||Troops::troops[getTroopAt(x,y)].type.hp<=Troops::CHARGER.atk))ctmap[x][y]=c_LIME;
 		if(moved>bookForDfs[x][y])return;
@@ -285,7 +282,7 @@ namespace GAME{
 		short dx=x+dir[p][0],dy=y+dir[p][1];
 		if(dx<0||dy<0||dx>=mapHeight||dy>=mapWidth||isMountAt(dx,dy)
 				||isCampAt(dx,dy)&&getCampAt(dx,dy)!=originTm)return;
-		drawMoveLine(dx,dy,moved+1,movlim,originTm,p);
+		drawMoveCharger(dx,dy,moved+1,movlim,originTm,p);
 	}
 	void drawMoveDfs(short x,short y,int moved,int movlim,int originTm){
 		if(moved>movlim)return;
@@ -300,6 +297,7 @@ namespace GAME{
 		}
 	}
 	
+	//attack
 	void drawAttackDfs(short x,short y,int moved,int movlim,int originTm,int met=0){
 		if(moved>movlim)return;
 		if(isTroopAt(x,y)&&troops[getTroopAt(x,y)].tm!=originTm||isCampAt(x,y)&&getCampAt(x,y)!=originTm)ctmap[x][y]=c_RED,atkable=1;
@@ -314,6 +312,13 @@ namespace GAME{
 			}
 			else drawAttackDfs(dx,dy,moved+1,movlim,originTm,0);
 		}
+	}
+	void drawAttackMortar(short x,short y,int moved,int movlim){
+		for(int i=0;i<mapHeight;i++)
+			for(int j=0;j<mapWidth;j++)
+				if(!isMountAt(i,j) && abs(i-x) + abs(j-y) <= movlim&&abs(i-x)+abs(j-y)>=3)
+					ctmap[i][j]=c_RED,atkable=1;
+		return;
 	}
 	void checkAttackDfs(short x,short y,int moved,int movlim,int originTm,int met=0){
 		if(moved>movlim)return;
@@ -330,15 +335,27 @@ namespace GAME{
 			else checkAttackDfs(dx,dy,moved+1,movlim,originTm,0);
 		}
 	}
-	
 	void dfsClear(){memset(ctmap,0,sizeof(ctmap));memset(bookForDfs,0x3f,sizeof(bookForDfs));}
 	
+	//game logics
+	bool onEndTurn(){
+		if(spacePressed){spacePressed=false;return true;}
+		else return false;
+	}
 	bool enableToMove(TroopId tar){
 		return !troops[tar].moved;
+	}
+	void checkDie(TroopId tar){
+		if(troops[tar].type.hp<=0){
+			tmap[troops[tar].x][troops[tar].y]=0;
+		 	troops.erase(troops.begin()+tar);
+			
+		}
 	}
 	bool enableToAct(TroopId tar){
 		if(troops[tar].acted)return false;
 		if(map[troops[tar].x][troops[tar].y]==SCAMP)return true;
+		if(troops[tar].type==Troops::MORTAR)return true;
 		if(troops[tar].type==Troops::CHARGER)return false;
 		memset(bookForDfs,0x3f,sizeof(bookForDfs));
 		atkable=0;
@@ -346,14 +363,43 @@ namespace GAME{
 		if(atkable)return true;
 		return false;
 	}
-	
-	
+	bool won(){
+		if(atkOneTurn>=3){
+			if(nowTurn==1){
+				SetConsoleTitle((string("War Game - WHITE Wins")).c_str());
+				Sleep(5000);
+				return true;
+			}else{
+				SetConsoleTitle((string("War Game - BLACK Wins")).c_str());
+				Sleep(5000);
+				return true;
+			}
+		}
+		if(wcHp<=0){
+			SetConsoleTitle((string("War Game - BLACK Wins")).c_str());
+			Sleep(5000);
+			return true;
+		}
+		else if(bcHp<=0){
+			SetConsoleTitle((string("War Game - WHITE Wins")).c_str());
+			Sleep(5000);
+			return true;
+		}
+		else return false;
+	}
+	bool nowMovedAll(){
+		for(int t=0;t<troops.size();t++){
+			if(troops[t].tm==nowTurn&&(enableToAct(t)||enableToMove(t)))return false;
+		}
+		return true;
+	}
+	//operation selecting
 	void selectMove(TroopId tar){
 		short x=troops[tar].x,y=troops[tar].y;
 		dfsClear();
 		if(troops[tar].type==Troops::CHARGER){
 			for(int i=0;i<4;i++)
-				drawMoveLine(x,y,0,6,troops[tar].tm,i);
+				drawMoveCharger(x,y,0,6,troops[tar].tm,i);
 		}
 		else{
 			drawMoveDfs(x,y,0,troops[tar].type.mov,troops[tar].tm);
@@ -473,7 +519,10 @@ namespace GAME{
 		if(troops[tar].type==Troops::CHARGER)return;
 		short x=troops[tar].x,y=troops[tar].y;
 		dfsClear();
-		drawAttackDfs(x,y,0,troops[tar].type.sho,troops[tar].tm);
+		if(troops[tar].type==Troops::MORTAR)
+			drawAttackMortar(x,y,0,troops[tar].type.sho);
+		else
+			drawAttackDfs(x,y,0,troops[tar].type.sho,troops[tar].tm);
 		drawMapItem(x-troops[tar].type.sho,y-troops[tar].type.sho,x+troops[tar].type.sho,y+troops[tar].type.sho);
 		while(1){
 			if(!enableToAct(tar))return;
@@ -495,60 +544,45 @@ namespace GAME{
 				COORD blockPos=clickWhichBlock(lastClickedPos);
 				short dx=blockPos.Y,dy=blockPos.X;
 				if(ctmap[dx][dy]==c_RED){
+					troops[tar].acted=1;
 					if(isCampAt(dx,dy)){
 						if(getCampAt(dx,dy)==0)bcHp-=troops[tar].type.atk;
 						else wcHp-=troops[tar].type.atk;
 						atkOneTurn+=troops[tar].type.atk;
-						troops[tar].acted=1;
 						dfsClear();
 						drawMapItem(x-troops[tar].type.sho,y-troops[tar].type.sho,x+troops[tar].type.sho,y+troops[tar].type.sho);
 						return;
 					}
-					
-					TroopId target=getTroopAt(dx,dy);
-					troops[tar].acted=1;
-					dfsClear();
-					drawMapItem(x-troops[tar].type.sho,y-troops[tar].type.sho,x+troops[tar].type.sho,y+troops[tar].type.sho);
-					troops[target].type.hp-=troops[tar].type.atk;
-					checkDie(target);
-					drawMapItem(dx,dy,dx,dy);
+					else if(isTroopAt(dx,dy)) {
+						TroopId target=getTroopAt(dx,dy);
+						dfsClear();
+						drawMapItem(x-troops[tar].type.sho,y-troops[tar].type.sho,x+troops[tar].type.sho,y+troops[tar].type.sho);
+						troops[target].type.hp-=troops[tar].type.atk;
+						checkDie(target);
+						drawMapItem(dx,dy,dx,dy);
+					}
+					if(troops[tar].type==Troops::MORTAR){
+						int sho=troops[tar].type.sho;
+						for(int i=0;i<4;i++){
+							int nx=dx+dir[i][0],ny=dy+dir[i][1];
+							if(isTroopAt(nx,ny)){
+								TroopId target=getTroopAt(nx,ny);
+								drawMapItem(x-troops[tar].type.sho,y-troops[tar].type.sho,x+troops[tar].type.sho,y+troops[tar].type.sho);
+								troops[target].type.hp-=troops[tar].type.atk;
+								checkDie(target);
+								drawMapItem(nx,ny,nx,ny);
+							}
+						}
+						dfsClear();
+						drawMapItem(x-sho,y-sho,x+sho,y+sho);
+					}
 					return;
 				}
 			}
 		}
 	}
 	
-	bool won(){
-		if(atkOneTurn>=3){
-			if(nowTurn==1){
-				SetConsoleTitle((string("War Game - WHITE Wins")).c_str());
-				Sleep(5000);
-				return true;
-			}else{
-				SetConsoleTitle((string("War Game - BLACK Wins")).c_str());
-				Sleep(5000);
-				return true;
-			}
-		}
-		if(wcHp<=0){
-			SetConsoleTitle((string("War Game - BLACK Wins")).c_str());
-			Sleep(5000);
-			return true;
-		}
-		else if(bcHp<=0){
-			SetConsoleTitle((string("War Game - WHITE Wins")).c_str());
-			Sleep(5000);
-			return true;
-		}
-		else return false;
-	}
-	bool nowMovedAll(){
-		for(int t=0;t<troops.size();t++){
-			if(troops[t].tm==nowTurn&&(enableToAct(t)||enableToMove(t)))return false;
-		}
-		return true;
-	}
-	
+	//turn body
 	void turn(){
 		dfsClear();
 		Troops::clearUsedTags();
@@ -599,18 +633,8 @@ namespace GAME{
 		}
 		
 	}
-	void gameRun(){
-		WIN_CONTROL::hideCursor();
-		Troops::clearUsedTags();
-
-		turn();
-		nowTurn^=1;
-		Sleep(300);
-		spacePressed=0;
-	}
 	
-	
-	
+	//before game start
 	void placeTroopAt(TroopType type,short x,short y,int tm){
 		Troop nt(type,tm,x,y);
 		Troops::troops.push_back(nt);
@@ -631,7 +655,8 @@ namespace GAME{
 		mainCampType[4]=LANCE;
 		mainCampType[5]=SWORD;
 		mainCampType[6]=CHARGER;
-		mainCampType[7]=EMPTY;
+		mainCampType[7]=MORTAR;
+		mainCampType[8]=EMPTY;
 		
 		sideCampType[0]=SHIELD;
 		sideCampType[1]=CROSSBOW;
@@ -701,8 +726,6 @@ namespace GAME{
 			}
 		}
 	}
-	
-	
 	void gameInit(){
 		bcHp=wcHp=6;
 		bcPos=COORD{-10,-10};
@@ -724,6 +747,16 @@ namespace GAME{
 		spacePressed=mouseClicked=rightClicked=0;
 	}
 	
+	//game 
+	void gameRun(){
+		WIN_CONTROL::hideCursor();
+		Troops::clearUsedTags();
+
+		turn();
+		nowTurn^=1;
+		Sleep(300);
+		spacePressed=0;
+	}
 	void gameStart(){
 		gameInit();
 		readMapFromFile();
