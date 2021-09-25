@@ -551,7 +551,6 @@ namespace GAME{
 						atkOneTurn+=troops[tar].type.atk;
 						dfsClear();
 						drawMapItem(x-troops[tar].type.sho,y-troops[tar].type.sho,x+troops[tar].type.sho,y+troops[tar].type.sho);
-						return;
 					}
 					else if(isTroopAt(dx,dy)) {
 						TroopId target=getTroopAt(dx,dy);
@@ -612,7 +611,7 @@ namespace GAME{
 				TroopId tar=getTroopAt(x,y);
 				if(enableToMove(tar)&&troops[tar].tm==nowTurn)
 					selectMove(tar);
-				if(won())return;
+				if(won()){GAME_FLAG=false;return;}
 				if(nowMovedAll())return;
 			}
 			if(rightClicked){
@@ -627,7 +626,7 @@ namespace GAME{
 				if(enableToAct(tar)&&troops[tar].tm==nowTurn)
 					if(!isScampAt(x,y))selectAttack(tar);
 					else selectProduce(tar);
-				if(won())return;
+				if(won()){GAME_FLAG=false;return;}
 				if(nowMovedAll())return;
 			}
 		}
