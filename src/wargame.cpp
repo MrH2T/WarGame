@@ -73,10 +73,46 @@ namespace GAME{
 	int atkOneTurn=0; 
 //Abandoned
 //	bool onPlacingCamp;
+
 	//troop choosing
-	int mctSize=9,sctSize=4;
+	int mctSize=0,sctSize=0;
 	TroopType mainCampType[100];
 	TroopType sideCampType[100];
+	
+	void initHQCampTypeImages(){
+		//use after Troops::troopImageInit()
+		mctSize=9,sctSize=4;
+		
+		mainCampType[0]=SHIELD;
+		mainCampType[1]=HORSE;
+		mainCampType[2]=BOW;
+		mainCampType[3]=CROSSBOW;
+		mainCampType[4]=LANCE;
+		mainCampType[5]=SWORD;
+		mainCampType[6]=CHARGER;
+		mainCampType[7]=MORTAR;
+		mainCampType[8]=EMPTY;
+		
+		sideCampType[0]=SHIELD;
+		sideCampType[1]=CROSSBOW;
+		sideCampType[2]=MORTAR;
+		sideCampType[3]=EMPTY;
+	}
+	void initClassicCampTypeImages(){
+		mctSize=7,sctSize=3;
+		
+		mainCampType[0]=SHIELD;
+		mainCampType[1]=HORSE;
+		mainCampType[2]=BOW;
+		mainCampType[3]=CROSSBOW;
+		mainCampType[4]=LANCE;
+		mainCampType[5]=SWORD;
+		mainCampType[6]=EMPTY;
+		
+		sideCampType[0]=SHIELD;
+		sideCampType[1]=CROSSBOW;
+		sideCampType[2]=EMPTY;
+	}
 	
 	//game flag
 	bool GAME_FLAG;
@@ -646,24 +682,6 @@ namespace GAME{
 		if(tp==EMPTY)setColor(isSideCampAt(x,y)?c_LYELLOW:tm?c_WHITE:c_DGREY,isSideCampAt(x,y)?c_LYELLOW:tm?c_WHITE:c_DGREY),std::cout<<"   ";
 		else std::cout<<tp.icon[tm]<<tp.hp;
 	}
-	void initCampTypeImages(){
-		//use after Troops::troopImageInit()
-		mainCampType[0]=SHIELD;
-		mainCampType[1]=HORSE;
-		mainCampType[2]=BOW;
-		mainCampType[3]=CROSSBOW;
-		mainCampType[4]=LANCE;
-		mainCampType[5]=SWORD;
-		mainCampType[6]=CHARGER;
-		mainCampType[7]=MORTAR;
-		mainCampType[8]=EMPTY;
-		
-		sideCampType[0]=SHIELD;
-		sideCampType[1]=CROSSBOW;
-		sideCampType[2]=MORTAR;
-		sideCampType[3]=EMPTY;
-	}
-	
 	bool choosingTroop(short x,short y,int tm,TroopType types[],int tplen){
 		int nowChoose=0;
 		TroopType nowType=types[nowChoose];
@@ -758,14 +776,29 @@ namespace GAME{
 		Sleep(300);
 		spacePressed=0;
 	}
-	void gameStart(){
+	void classicGameStart(){
 		gameInit();
+		initClassicCampTypeImages();
 		readMapFromFile();
 		drawMap();
 		drawMapItem();
 		userInit();
 		drawMapItem();
 		GAME_FLAG = 1;
+		while(GAME_FLAG){
+			gameRun();
+		}
+		cls();
+	}
+	void HQGameStart(){
+		gameInit();
+		initHQCampTypeImages();
+		readMapFromFile();
+		drawMap();
+		drawMapItem();
+		userInit();
+		drawMapItem();
+		GAME_FLAG=1;
 		while(GAME_FLAG){
 			gameRun();
 		}
@@ -786,15 +819,16 @@ namespace APP{
 	
 	string mainMenuBar[]={"Start Local Game", "Start Internet Game","Exit"};
 	const int mainMenuBarSize=3;
-	string selectLocalMenuBar[]={"Classic Mode","Three Countries Mode","Return"};
-	const int slMenuBarSize=3;
+	string selectLocalMenuBar[]={"Classic Mode","Human High Quality Mode","Three Countries Mode","Return"};
+	const int slMenuBarSize=4;
 	int nowMenuChoosing,nowMenuBarSize;
 	
 	//nowGameEvent
 	#define ON_MENU 0x00
 	#define LOCAL_GAME 0x01
 	#define LOCAL_CLASSIC_GAME 0x10
-	#define LOCAL_THREE_GAME 0x11
+	#define LOCAL_HQ_GAME 0x11
+	#define LOCAL_THREE_GAME 0x12
 	#define INET_GAME 0x02
 	#define INET_CLASSIC_GAME 0x20
 	#define INET_THREE_GAME 0x21
@@ -812,8 +846,9 @@ namespace APP{
 	#define MAIN_PAGE_INET 1
 	#define MAIN_PAGE_EXIT 2
 	#define SELECT_LOCAL_CLASSIC 0
-	#define SELECT_LOCAL_THREE 1
-	#define SELECT_LOCAL_RETURN 2
+	#define SELECT_LOCAL_HQ 1
+	#define SELECT_LOCAL_THREE 2
+	#define SELECT_LOCAL_RETURN 3
 	void changeToMainMenu(){
 		ON_MENU_SCENE=1,stage=MAIN_PAGE,nowMenuChoosing=0;
 		nowGameEvent=ON_MENU;
@@ -860,6 +895,8 @@ namespace APP{
 		else if(stage==SELECT_LOCAL){
 			if(nowMenuChoosing==SELECT_LOCAL_CLASSIC){
 				stage=GAME_START,nowGameEvent=LOCAL_CLASSIC_GAME;
+			}else if(nowMenuChoosing==SELECT_LOCAL_HQ){
+				stage=GAME_START,nowGameEvent=LOCAL_HQ_GAME;
 			}else if(nowMenuChoosing==SELECT_LOCAL_THREE){
 				stage=GAME_START,nowGameEvent=LOCAL_THREE_GAME;
 			}else if(nowMenuChoosing==SELECT_LOCAL_RETURN){
@@ -874,7 +911,6 @@ int main(){
 	
 	WIN_CONTROL::CONSOLE_INIT();
 	GAME::Troops::troopImageInit();
-	GAME::initCampTypeImages();
 	SetConsoleTitle("War Game");
 	while(APP::APP_RUNNING){
 		GAME_FLAG = 0;
@@ -913,7 +949,10 @@ int main(){
 		}
 		cls();
 		if(nowGameEvent==LOCAL_CLASSIC_GAME){
-			gameStart();
+			classicGameStart();
+		}
+		else if(nowGameEvent==LOCAL_HQ_GAME){
+			HQGameStart();
 		}
 	}
 	
