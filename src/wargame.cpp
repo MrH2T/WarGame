@@ -74,7 +74,7 @@ namespace GAME{
 //Abandoned
 //	bool onPlacingCamp;
 	//troop choosing
-	int mctSize=9,sctSize=3;
+	int mctSize=9,sctSize=4;
 	TroopType mainCampType[100];
 	TroopType sideCampType[100];
 	
@@ -545,6 +545,7 @@ namespace GAME{
 				short dx=blockPos.Y,dy=blockPos.X;
 				if(ctmap[dx][dy]==c_RED){
 					troops[tar].acted=1;
+					TroopType tp=troops[tar].type;
 					if(isCampAt(dx,dy)){
 						if(getCampAt(dx,dy)==0)bcHp-=troops[tar].type.atk;
 						else wcHp-=troops[tar].type.atk;
@@ -560,7 +561,7 @@ namespace GAME{
 						checkDie(target);
 						drawMapItem(dx,dy,dx,dy);
 					}
-					if(troops[tar].type==Troops::MORTAR){
+					if(tp==MORTAR){
 						int sho=troops[tar].type.sho;
 						for(int i=0;i<4;i++){
 							int nx=dx+dir[i][0],ny=dy+dir[i][1];
@@ -659,7 +660,8 @@ namespace GAME{
 		
 		sideCampType[0]=SHIELD;
 		sideCampType[1]=CROSSBOW;
-		sideCampType[2]=EMPTY;
+		sideCampType[2]=MORTAR;
+		sideCampType[3]=EMPTY;
 	}
 	
 	bool choosingTroop(short x,short y,int tm,TroopType types[],int tplen){
