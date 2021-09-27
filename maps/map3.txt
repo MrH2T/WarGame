@@ -1,0 +1,11 @@
+10 10
+..wwWWww..
+..wwWWww..
+C..wwww...
+....wwRRRC
+.RRRRRRRR.
+.CRRRww...
+....bbbb..
+...bbBBbb.
+...bbBBbb.
+....bbbb.C
