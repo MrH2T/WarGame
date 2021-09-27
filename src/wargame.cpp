@@ -955,8 +955,6 @@ int main(){
 			HQGameStart();
 		}
 	}
-	
-	
 }
 
 #endif
