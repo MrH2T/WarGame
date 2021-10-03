@@ -1,3 +1,5 @@
 *.exe
 *.dev
 *.o
+.vscode/*
+
